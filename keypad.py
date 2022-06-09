@@ -88,7 +88,16 @@ class Keypad:
         return True
 
     def getKeypress(self):
-        for k,v in self.buttons.items():
+        for k,v in self.buttons.items():  
             if v.value == False:
                     return k
         return False
+
+keypad = Keypad()
+
+while True:
+    o = keypad.getKeypress()
+    if o != False:
+        keypad.toggleKey(o)
+        print(o + " pressed")
+    time.sleep(0.2)
