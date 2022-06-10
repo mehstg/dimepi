@@ -4,6 +4,7 @@ import digitalio
 from adafruit_mcp230xx.mcp23017 import MCP23017
 import pin_mappings
 import time
+import asyncio
 
 class Keypad:
 
@@ -68,10 +69,10 @@ class Keypad:
         return True
 
     def setKeyOn(self,key):
-        self.leds["key"].value = False
+        self.leds[key].value = False
 
     def setKeyOff(self,key):
-        self.leds["key"].value = True
+        self.leds[key].value = True
 
     def toggleKey(self,key):
         if self.leds[key].value == True:
@@ -93,31 +94,34 @@ class Keypad:
                     return k
         return False
 
+    def getTrackChoice(self):
+        #Sample logic, move to function
+        while True:
+            # Get keypress and check if it is a letter
+            l = self.getKeypress()
+            if l != False:
+                if l.isalpha():
+                    #Toggle backlight on chosen letter
+                    self.toggleKey(l)
+                    #Wait 5 seconds for user to input number, if nothing entered, disregard and go back round the main loop
+                    t_end = time.time() + 5
+                    while time.time() < t_end:
+                        # Get keypress and chck if it is a digit
+                        n = self.getKeypress()
+                        if n != False:
+                            if n.isdigit():
+                                # Digit selected. Toggle backlight on chosen letter
+                                self.toggleKey(n)
+                                print(l + n + " selected")
+                                # Sample code, wait 1 second then turn all backlights off
+                                time.sleep(1)
+                                self.setKeysOff()
+                                # Break out of parent loop
+                                t_end = 0
+                        time.sleep(0.1)
+                    self.setKeysOff()
+            time.sleep(0.1)
+
 keypad = Keypad()
 
-#Sample logic, move to function
-while True:
-    # Get keypress and check if it is a letter
-    l = keypad.getKeypress()
-    if l != False:
-        if l.isalpha():
-            #Toggle backlight on chosen letter
-            keypad.toggleKey(l)
-            #Wait 5 seconds for user to input number, if nothing entered, disregard and go back round the main loop
-            t_end = time.time() + 5
-            while time.time() < t_end:
-                # Get keypress and chck if it is a digit
-                n = keypad.getKeypress()
-                if n != False:
-                    if n.isdigit():
-                        # Digit selected. Toggle backlight on chosen letter
-                        keypad.toggleKey(n)
-                        print(l + n + " selected")
-                        # Sample code, wait 1 second then turn all backlights off
-                        time.sleep(1)
-                        keypad.setKeysOff()
-                        # Break out of parent loop
-                        t_end = 0
-                time.sleep(0.1)
-            keypad.setKeysOff()
-    time.sleep(0.1)
+keypad.getTrackChoice()
