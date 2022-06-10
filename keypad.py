@@ -116,6 +116,8 @@ while True:
                         # Sample code, wait 1 second then turn all backlights off
                         time.sleep(1)
                         keypad.setKeysOff()
+                        # Break out of parent loop
+                        t_end = 0
                 time.sleep(0.1)
             keypad.setKeysOff()
     time.sleep(0.1)
