@@ -95,9 +95,27 @@ class Keypad:
 
 keypad = Keypad()
 
+#Sample logic, move to function
 while True:
-    o = keypad.getKeypress()
-    if o != False:
-        keypad.toggleKey(o)
-        print(o + " pressed")
-    time.sleep(0.2)
+    # Get keypress and check if it is a letter
+    l = keypad.getKeypress()
+    if l != False:
+        if l.isalpha():
+            #Toggle backlight on chosen letter
+            keypad.toggleKey(l)
+            #Wait 5 seconds for user to input number, if nothing entered, disregard and go back round the main loop
+            t_end = time.time() + 5
+            while time.time() < t_end:
+                # Get keypress and chck if it is a digit
+                n = keypad.getKeypress()
+                if n != False:
+                    if n.isdigit():
+                        # Digit selected. Toggle backlight on chosen letter
+                        keypad.toggleKey(n)
+                        print(l + n + " selected")
+                        # Sample code, wait 1 second then turn all backlights off
+                        time.sleep(1)
+                        keypad.setKeysOff()
+                time.sleep(0.1)
+            keypad.setKeysOff()
+    time.sleep(0.1)
