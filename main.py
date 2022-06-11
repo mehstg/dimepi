@@ -1,6 +1,7 @@
 #!/usr/bin/env python 
 from keypad import Keypad
 from credits import Credits
+import tracks
 import RPi.GPIO as GPIO 
 import asyncio
 import json
@@ -14,7 +15,7 @@ async def print_queue(queue,credits,keypad):
             # Notify the queue that the "work item" has been processed.
             queue.task_done()
 
-            print(output)
+            print(tracks.get_track_uri(output))
             credits.decrement_credits()
         else:
             keypad.set_credit_off()

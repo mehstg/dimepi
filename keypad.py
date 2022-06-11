@@ -11,6 +11,20 @@ class Keypad:
     buttons = {}
     leds = {}
 
+    # Map out assignment of backlight LED's to port expander IO on Sound Leisure keypad module
+    ledmap = {
+        "left" : {1: "2", 2: "1", 5: "A", 7: "B", 9: "C", 10: "D", 13: "4", 14: "3"},
+        "middle" : {6: "credit", 9: "E", 10: "F", 13: "6", 14: "5"},
+        "right" : {1: "8", 2: "7", 5: "G", 6: "H", 8: "J", 10: "K", 13: "10", 15: "9"}
+    }
+
+    # Map out assignment of buttons to port expander IO on Sound Leisure keypad module
+    keymap = {
+        "left" : {0: "2", 3: "1", 4: "A", 6: "B", 8: "C", 11: "D", 12: "4", 15: "3"},
+        "middle" : {8: "E", 11: "F", 12: "6", 15: "5"},
+        "right" : {0: "8", 3: "7", 4: "G", 7: "H", 9: "J", 11: "K", 12: "10", 14: "9"}
+    }
+
     def __init__(self,queue):
         self.queue = queue
         i2c = busio.I2C(board.SCL, board.SDA)
@@ -19,16 +33,16 @@ class Keypad:
         right = MCP23017(i2c, address=0x20) #Rightmost port expander
 
         #Set up input pins
-        for k, v in pin_mappings.keymap.items():
-            for k1, v1 in pin_mappings.keymap[k].items():
+        for k, v in self.keymap.items():
+            for k1, v1 in self.keymap[k].items():
                 pin = locals()[k].get_pin(k1)
                 pin.direction = digitalio.Direction.INPUT
                 pin.pull = digitalio.Pull.UP
                 self.buttons[v1] = pin
 
         # Set up LED's
-        for k, v in pin_mappings.ledmap.items():
-            for k1, v1 in pin_mappings.ledmap[k].items():
+        for k, v in self.ledmap.items():
+            for k1, v1 in self.ledmap[k].items():
                 pin = locals()[k].get_pin(k1)
                 pin.direction = digitalio.Direction.OUTPUT
                 pin.pull = digitalio.Pull.UP
@@ -76,7 +90,7 @@ class Keypad:
         return False
 
     async def get_track_choice(self):
-        #Sample logic, move to function
+        #Keypad poller
         while True:
             # Get keypress and check if it is a letter
             l = self.get_keypress()
