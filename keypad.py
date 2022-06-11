@@ -19,41 +19,21 @@ class Keypad:
         right = MCP23017(i2c, address=0x20) #Rightmost port expander
 
         #Set up input pins
-        for k, v in pin_mappings.keymap_left.items():
-            pin = left.get_pin(k)
-            pin.direction = digitalio.Direction.INPUT
-            pin.pull = digitalio.Pull.UP
-            self.buttons[v] = pin
-        for k, v in pin_mappings.keymap_middle.items():
-            pin = middle.get_pin(k)
-            pin.direction = digitalio.Direction.INPUT
-            pin.pull = digitalio.Pull.UP
-            self.buttons[v] = pin
-        for k, v in pin_mappings.keymap_right.items():
-            pin = right.get_pin(k)
-            pin.direction = digitalio.Direction.INPUT
-            pin.pull = digitalio.Pull.UP
-            self.buttons[v] = pin
+        for k, v in pin_mappings.keymap.items():
+            for k1, v1 in pin_mappings.keymap[k].items():
+                pin = locals()[k].get_pin(k1)
+                pin.direction = digitalio.Direction.INPUT
+                pin.pull = digitalio.Pull.UP
+                self.buttons[v1] = pin
 
         # Set up LED's
-        for k, v in pin_mappings.ledmap_left.items():
-            pin = left.get_pin(k)
-            pin.direction = digitalio.Direction.OUTPUT
-            pin.pull = digitalio.Pull.UP
-            pin.value = True
-            self.leds[v] = pin
-        for k, v in pin_mappings.ledmap_middle.items():
-            pin = middle.get_pin(k)
-            pin.direction = digitalio.Direction.OUTPUT
-            pin.pull = digitalio.Pull.UP
-            pin.value = True
-            self.leds[v] = pin
-        for k, v in pin_mappings.ledmap_right.items():
-            pin = right.get_pin(k)
-            pin.direction = digitalio.Direction.OUTPUT
-            pin.pull = digitalio.Pull.UP
-            pin.value = True
-            self.leds[v] = pin
+        for k, v in pin_mappings.ledmap.items():
+            for k1, v1 in pin_mappings.ledmap[k].items():
+                pin = locals()[k].get_pin(k1)
+                pin.direction = digitalio.Direction.OUTPUT
+                pin.pull = digitalio.Pull.UP
+                pin.value = True
+                self.leds[v1] = pin
 
     def set_keys_off(self):
         for k,v in self.leds.items():
