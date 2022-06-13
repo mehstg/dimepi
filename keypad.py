@@ -2,9 +2,9 @@ import board
 import busio
 import digitalio
 from adafruit_mcp230xx.mcp23017 import MCP23017
-import pin_mappings
 import time
 import asyncio
+import logging
 
 class Keypad:
 
@@ -75,13 +75,16 @@ class Keypad:
         elif self.leds[key].value == False:
             self.leds[key].value = True
 
-    def set_credit_off(self):
+    def set_credit_light_off(self):
         self.leds["credit"].value = True
         return True
 
-    def set_credit_on(self):
+    def set_credit_light_on(self):
         self.leds["credit"].value = False
         return True
+
+    def get_credit_light(self):
+        return self.leds["credit"].value
 
     def get_keypress(self):
         for k,v in self.buttons.items():  
@@ -89,13 +92,19 @@ class Keypad:
                     return k
         return False
 
-    async def get_track_choice(self):
+    async def get_key_combination(self):
         #Keypad poller
         while True:
+            if self.get_credit_light() == False:
+                self.set_keys_on()
+            else:
+                self.set_keys_off()
             # Get keypress and check if it is a letter
             l = self.get_keypress()
             if l != False:
                 if l.isalpha():
+                    self.set_keys_off()
+                    logging.info("Matched Alpha Character: " + l)
                     #Toggle backlight on chosen letter
                     self.toggle_key(l)
                     #Wait 5 seconds for user to input number, if nothing entered, disregard and go back round the main loop
@@ -105,6 +114,7 @@ class Keypad:
                         n = self.get_keypress()
                         if n != False:
                             if n.isdigit():
+                                logging.info("Matched Digit: " + n)
                                 # Digit selected. Toggle backlight on chosen letter
                                 self.toggle_key(n)
                                 # Sample code, wait 1 second then turn all backlights off
@@ -112,7 +122,9 @@ class Keypad:
                                 self.set_keys_off()
                                 # Break out of parent loop
                                 t_end = 0
+                                logging.debug("Put key combination " + l + n + " on queue")
                                 self.queue.put_nowait(l + n)
                         await asyncio.sleep(0.1)
+                    logging.info("Timeout waiting for digit")
                     self.set_keys_off()
             await asyncio.sleep(0.1)
