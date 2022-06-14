@@ -1,0 +1,10 @@
+version: "3"
+services:
+  dimepi:
+    build: .
+    network_mode: "host"
+  sonos-api:
+    image: chrisns/docker-node-sonos-http-api
+    ports:
+      - "5005:5005"
+    network_mode: "host"

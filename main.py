@@ -8,7 +8,7 @@ import asyncio
 import json
 import logging
 
-url = 'http://192.168.1.50'
+url = 'http://sonos-api'
 zone = 'Kitchen'
 queuemode = 'now'
 
