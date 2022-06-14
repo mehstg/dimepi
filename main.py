@@ -8,8 +8,8 @@ import asyncio
 import json
 import logging
 
-url = 'http://sonos-api'
-zone = 'Kitchen'
+url = 'http://localhost:5005'
+zone = 'Master Bedroom'
 queuemode = 'now'
 
 logging.basicConfig(level=logging.DEBUG)

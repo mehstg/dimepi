@@ -95,15 +95,10 @@ class Keypad:
     async def get_key_combination(self):
         #Keypad poller
         while True:
-            if self.get_credit_light() == False:
-                self.set_keys_on()
-            else:
-                self.set_keys_off()
             # Get keypress and check if it is a letter
             l = self.get_keypress()
             if l != False:
                 if l.isalpha():
-                    self.set_keys_off()
                     logging.info("Matched Alpha Character: " + l)
                     #Toggle backlight on chosen letter
                     self.toggle_key(l)

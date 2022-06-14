@@ -4,6 +4,8 @@ services:
     build: .
     network_mode: "host"
     privileged: true
+    labels:
+      io.balena.features.kernel-modules: '1'
   sonos-api:
     image: chrisns/docker-node-sonos-http-api
     ports:

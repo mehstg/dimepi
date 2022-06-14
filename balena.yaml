@@ -17,9 +17,4 @@ assets:
       url: 'https://raw.githubusercontent.com/balena-io-examples/balena-nodejs-hello-world/master/logo.png'
 data:
   supportedDeviceTypes:
-    - generic-x86-64-ext
-    - generic-aarch64
     - generic-armv7hf
-    - fincm3
-    - beaglebone-black
-    - jetson-tx2
