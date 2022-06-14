@@ -1,8 +1,9 @@
-version: "3"
+version: "2"
 services:
   dimepi:
     build: .
     network_mode: "host"
+    privileged: true
   sonos-api:
     image: chrisns/docker-node-sonos-http-api
     ports:
