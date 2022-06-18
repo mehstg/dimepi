@@ -10,8 +10,8 @@ class Credits:
     def set_credits(self,num):
         self.credits = num
     
-    def increment_credits(self):
+    def increment(self):
         self.credits += 1
 
-    def decrement_credits(self):
+    def decrement(self):
         self.credits -= 1

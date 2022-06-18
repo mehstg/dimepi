@@ -1,4 +1,6 @@
 version: "2"
+volumes:
+  database:
 services:
   dimepi:
     build: .
@@ -6,6 +8,8 @@ services:
     privileged: true
     labels:
       io.balena.features.kernel-modules: '1'
+    volumes:
+      - database:/var/lib/dimepi
   sonos-api:
     image: chrisns/docker-node-sonos-http-api
     ports:

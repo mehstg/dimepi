@@ -117,7 +117,7 @@ class Keypad:
                                 self.set_keys_off()
                                 # Break out of parent loop
                                 t_end = 0
-                                logging.debug("Put key combination " + l + n + " on queue")
+                                logging.debug("Put key combination " + l + n + " on asyncio queue")
                                 self.queue.put_nowait(l + n)
                         await asyncio.sleep(0.1)
                     logging.info("Timeout waiting for digit")
