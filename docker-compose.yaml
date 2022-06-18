@@ -9,7 +9,7 @@ services:
     labels:
       io.balena.features.kernel-modules: '1'
     volumes:
-      - database:/var/lib/dimepi/database
+      - database:/var/lib/dimepi
   sonos-api:
     image: chrisns/docker-node-sonos-http-api
     ports:

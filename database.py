@@ -12,7 +12,7 @@ class Tracks(SQLModel, table=True):
     spotify_id: str
 
 
-engine = create_engine("sqlite:///database.db")
+engine = create_engine("sqlite:////var/lib/dimepi/database.db")
 SQLModel.metadata.create_all(engine)
 
 def set_track(key: str, track_name: str, artist_name: str, spotify_id: str):

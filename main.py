@@ -4,7 +4,7 @@ from credits import Credits
 from sonos_interface import SonosInterface
 import database
 import RPi.GPIO as GPIO 
-import signal
+from functools import partial
 import asyncio
 import logging
 
@@ -36,34 +36,28 @@ async def jukebox_handler(queue,credits,keypad,sonos):
         else:
             keypad.set_credit_light_off()
 
-async def coinslot_handler(credits):
+def coinslot_handler(c):
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(coinslot_gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(coinslot_gpio_pin, GPIO.FALLING, 
-            callback=coinslot_callback, bouncetime=100)
+            callback=partial(coinslot_callback,c), bouncetime=200)
 
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.pause()
-
-def coinslot_callback(channel):
+def coinslot_callback(c,channel):
     logging.info("Coin inserted - Incrementing credits")
-    #credits.increment()
-
-def signal_handler(sig, frame):
-    GPIO.cleanup()
+    c.increment()
 
 def main():
     try:
 
         keypad_queue = asyncio.Queue()
         keypad = Keypad(keypad_queue)
-        credits = Credits(6)
+        credits = Credits(0)
         sonos = SonosInterface(url,zone,queuemode)
+        coinslot_handler(credits)
 
         loop = asyncio.get_event_loop()
         loop.create_task(keypad.get_key_combination())
         loop.create_task(jukebox_handler(keypad_queue,credits,keypad,sonos))
-        loop.create_task(coinslot_handler(credits))
 
         loop.run_forever()
 
