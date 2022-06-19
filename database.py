@@ -79,7 +79,7 @@ def get_credits():
         credit = session.query(Credits).first()
         if credit:
             #logging.debug(f'Getting credits: {credit.credit_count}')
-            return int(credit.credit_count)
+            return credit.credit_count
         else:
             logging.error(f'Credit count unset')
             return None
@@ -90,6 +90,7 @@ def increment_credits():
         if credit:
             logging.debug(f'Incrementing credits by 1')
             credit.credit_count += 1
+            session.commit()
         else:
             logging.error(f'Credit count unset')
             return None
@@ -100,6 +101,7 @@ def decrement_credits():
         if credit:
             logging.debug(f'Decrementing credits by 1')
             credit.credit_count -= 1
+            session.commit()
         else:
             logging.error(f'Credit count unset')
             return None
