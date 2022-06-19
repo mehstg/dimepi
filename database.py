@@ -13,7 +13,7 @@ class Tracks(SQLModel, table=True):
 
 class Credits(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    credit_count: str
+    credit_count: int
 
 
 engine = create_engine("sqlite:////var/lib/dimepi/database.db")
@@ -78,10 +78,10 @@ def get_credits():
     with Session(engine) as session:
         credit = session.query(Credits).first()
         if credit:
-            logging.debug(f'Getting credits: {credit.credit_count}')
-            return credit.credit_count
+            #logging.debug(f'Getting credits: {credit.credit_count}')
+            return int(credit.credit_count)
         else:
-            logging.error(f'No credits found')
+            logging.error(f'Credit count unset')
             return None
 
 def increment_credits():
@@ -91,7 +91,7 @@ def increment_credits():
             logging.debug(f'Incrementing credits by 1')
             credit.credit_count += 1
         else:
-            logging.error(f'No credits found')
+            logging.error(f'Credit count unset')
             return None
 
 def decrement_credits():
@@ -101,5 +101,5 @@ def decrement_credits():
             logging.debug(f'Decrementing credits by 1')
             credit.credit_count -= 1
         else:
-            logging.error(f'No credits found')
+            logging.error(f'Credit count unset')
             return None
