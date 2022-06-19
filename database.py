@@ -11,9 +11,17 @@ class Tracks(SQLModel, table=True):
     artist_name: Optional[str] = None
     spotify_id: str
 
+class Credits(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    credit_count: int
+
 
 engine = create_engine("sqlite:////var/lib/dimepi/database.db")
 SQLModel.metadata.create_all(engine)
+
+###################################################################################
+#################### Functions for managing tracks ################################
+###################################################################################
 
 def set_track(key: str, track_name: str, artist_name: str, spotify_id: str):
     with Session(engine) as session:
@@ -48,4 +56,52 @@ def delete_track(key: str):
             session.commit()
         else:
             logging.error(f'No track found for key {key}')
+            return None
+
+###################################################################################
+#################### Functions for managing credits ###############################
+###################################################################################
+
+def set_credits(num: int):
+    with Session(engine) as session:
+        credit = session.query(Credits).first()
+        if credit:
+            logging.debug(f'Setting credits to {num}')
+            credit.credit_count = num
+        else:
+            logging.debug(f'Credit count unset. Setting to {num}')
+            credit = Credits(credit_count=num)
+            session.add(credit)
+        session.commit()
+
+def get_credits():
+    with Session(engine) as session:
+        credit = session.query(Credits).first()
+        if credit:
+            #logging.debug(f'Getting credits: {credit.credit_count}')
+            return credit.credit_count
+        else:
+            logging.error(f'Credit count unset')
+            return None
+
+def increment_credits():
+    with Session(engine) as session:
+        credit = session.query(Credits).first()
+        if credit:
+            logging.debug(f'Incrementing credits by 1')
+            credit.credit_count += 1
+            session.commit()
+        else:
+            logging.error(f'Credit count unset')
+            return None
+
+def decrement_credits():
+    with Session(engine) as session:
+        credit = session.query(Credits).first()
+        if credit:
+            logging.debug(f'Decrementing credits by 1')
+            credit.credit_count -= 1
+            session.commit()
+        else:
+            logging.error(f'Credit count unset')
             return None
