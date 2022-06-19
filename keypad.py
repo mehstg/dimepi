@@ -99,7 +99,7 @@ class Keypad:
             l = self.get_keypress()
             if l != False:
                 if l.isalpha():
-                    logging.info("Matched Alpha Character: " + l)
+                    logging.debug("Matched Alpha Character: " + l)
                     #Toggle backlight on chosen letter
                     self.toggle_key(l)
                     #Wait 5 seconds for user to input number, if nothing entered, disregard and go back round the main loop
@@ -109,7 +109,7 @@ class Keypad:
                         n = self.get_keypress()
                         if n != False:
                             if n.isdigit():
-                                logging.info("Matched Digit: " + n)
+                                logging.debug("Matched Digit: " + n)
                                 # Digit selected. Toggle backlight on chosen letter
                                 self.toggle_key(n)
                                 # Sample code, wait 1 second then turn all backlights off
@@ -120,6 +120,6 @@ class Keypad:
                                 logging.debug("Put key combination " + l + n + " on asyncio queue")
                                 self.queue.put_nowait(l + n)
                         await asyncio.sleep(0.1)
-                    logging.info("Timeout waiting for digit")
+                    logging.debug("Timeout waiting for digit")
                     self.set_keys_off()
             await asyncio.sleep(0.1)
