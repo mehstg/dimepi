@@ -59,7 +59,6 @@ def main():
         loop = asyncio.get_event_loop()
         loop.create_task(keypad.get_key_combination())
         loop.create_task(jukebox_handler(keypad_queue,keypad,sonos))
-        loop.create_task(web_ui.run_webserver())
         loop.run_forever()
 
         loop.run_forever()
