@@ -6,6 +6,8 @@ import RPi.GPIO as GPIO
 from functools import partial
 import asyncio
 import logging
+import board
+import neopixel
 
 url = 'http://localhost:5005'
 zone = 'Master Bedroom'
@@ -50,6 +52,8 @@ def coinslot_callback(channel):
 def main():
     try:
 
+        pixels = neopixel.NeoPixel(board.D18, 1)
+        pixels[0] = (255, 90, 0)
         keypad_queue = asyncio.Queue()
         keypad = Keypad(keypad_queue)
         database.set_credits(0)
