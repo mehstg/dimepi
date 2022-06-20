@@ -1,10 +1,14 @@
 from asyncio.log import logger
 from typing import Optional
 import logging
-
+import configparser
 from sqlmodel import Field, SQLModel, create_engine, Session
 
+config = configparser.ConfigParser()
+config.sections()
+config.read('config.ini')
 
+database_path = config['database']['db_path']
 class Tracks(SQLModel, table=True):
     key: str = Field(primary_key=True)
     track_name: Optional[str] = None
@@ -16,7 +20,7 @@ class Credits(SQLModel, table=True):
     credit_count: int
 
 
-engine = create_engine("sqlite:////var/lib/dimepi/database.db")
+engine = create_engine(f"sqlite:///{database_path}")
 SQLModel.metadata.create_all(engine)
 
 ###################################################################################
@@ -43,6 +47,26 @@ def get_track_id(key: str):
         if track:
             logging.debug(f'Track found in database: {track.spotify_id}')
             return track.spotify_id 
+        else:
+            logging.error(f'No track found for key {key}')
+            return None
+
+def get_track_name(key: str):
+    with Session(engine) as session:
+        track = session.query(Tracks).filter(Tracks.key == key).first()
+        if track:
+            logging.debug(f'Track found in database: {track.track_name}')
+            return track.track_name 
+        else:
+            logging.error(f'No track found for key {key}')
+            return None
+
+def get_track_artist(key: str):
+    with Session(engine) as session:
+        track = session.query(Tracks).filter(Tracks.key == key).first()
+        if track:
+            logging.debug(f'Track found in database: {track.artist_name}')
+            return track.artist_name 
         else:
             logging.error(f'No track found for key {key}')
             return None

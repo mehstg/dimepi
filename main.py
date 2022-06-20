@@ -6,11 +6,20 @@ import RPi.GPIO as GPIO
 from functools import partial
 import asyncio
 import logging
+import board
+import neopixel
+import configparser
 
-url = 'http://localhost:5005'
-zone = 'Master Bedroom'
-queuemode = 'now'
-coinslot_gpio_pin = 4
+config = configparser.ConfigParser()
+config.sections()
+config.read('config.ini')
+
+url = config['sonos']['api_url']
+zone = config['sonos']['zone']
+queuemode = config['sonos']['queuemode']
+coinslot_gpio_pin = config['general'].getint('coinslot_gpio_pin')
+cabinet_lights_colour = config['general']['cabinet_lights_colour'].split(",")
+
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
     level=logging.DEBUG,
@@ -27,7 +36,8 @@ async def jukebox_handler(queue,keypad,sonos):
             # Notify the queue that the "work item" has been processed.
             queue.task_done()
 
-            logging.info(f'Track selection detected on keypad: {output}')
+            logging.info(f'Track selection detected on queue: {output}')
+            logging.info(f"Matched to song in database. Playing song {database.get_track_name(output)} by {database.get_artist_name(output)}")
             result = sonos.set_track(database.get_track_id(output))
             if result:
                 logging.info(f"Track successfully queued. Decrementing credits to {database.get_credits()}")
@@ -47,9 +57,18 @@ def coinslot_callback(channel):
     logging.info(f"Coin inserted - Incrementing credits to {database.get_credits()}")
     database.increment_credits()
 
+def init_cabinet_lights(r,g,b):
+    pixels = neopixel.NeoPixel(board.D18, 1)
+    pixels[0] = (r,g,b)
+    return pixels
+
+def set_cabinet_lights(pixels,r,g,b):
+    pixels[0] = (r,g,b)
+    return pixels
+
 def main():
     try:
-
+        cabinet_lights = init_cabinet_lights(int(cabinet_lights_colour[0]),int(cabinet_lights_colour[1]),int(cabinet_lights_colour[2]))
         keypad_queue = asyncio.Queue()
         keypad = Keypad(keypad_queue)
         database.set_credits(0)
