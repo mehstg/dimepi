@@ -1,10 +1,14 @@
 from asyncio.log import logger
 from typing import Optional
 import logging
-
+import configparser
 from sqlmodel import Field, SQLModel, create_engine, Session
 
+config = configparser.ConfigParser()
+config.sections()
+config.read('config.ini')
 
+database_path = config['database']['db_path']
 class Tracks(SQLModel, table=True):
     key: str = Field(primary_key=True)
     track_name: Optional[str] = None
@@ -16,7 +20,7 @@ class Credits(SQLModel, table=True):
     credit_count: int
 
 
-engine = create_engine("sqlite:////var/lib/dimepi/database.db")
+engine = create_engine(f"sqlite:///{database_path}")
 SQLModel.metadata.create_all(engine)
 
 ###################################################################################
