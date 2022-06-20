@@ -36,7 +36,8 @@ async def jukebox_handler(queue,keypad,sonos):
             # Notify the queue that the "work item" has been processed.
             queue.task_done()
 
-            logging.info(f'Track selection detected on keypad: {output}')
+            logging.info(f'Track selection detected on queue: {output}')
+            logging.info(f"Matched to song in database. Playing song {database.get_track_name(output)} by {database.get_artist_name(output)}")
             result = sonos.set_track(database.get_track_id(output))
             if result:
                 logging.info(f"Track successfully queued. Decrementing credits to {database.get_credits()}")

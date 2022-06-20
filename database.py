@@ -51,6 +51,26 @@ def get_track_id(key: str):
             logging.error(f'No track found for key {key}')
             return None
 
+def get_track_name(key: str):
+    with Session(engine) as session:
+        track = session.query(Tracks).filter(Tracks.key == key).first()
+        if track:
+            logging.debug(f'Track found in database: {track.track_name}')
+            return track.track_name 
+        else:
+            logging.error(f'No track found for key {key}')
+            return None
+
+def get_track_artist(key: str):
+    with Session(engine) as session:
+        track = session.query(Tracks).filter(Tracks.key == key).first()
+        if track:
+            logging.debug(f'Track found in database: {track.artist_name}')
+            return track.artist_name 
+        else:
+            logging.error(f'No track found for key {key}')
+            return None
+
 def delete_track(key: str):
     with Session(engine) as session:
         track = session.query(Tracks).filter(Tracks.key == key).first()
