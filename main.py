@@ -17,6 +17,7 @@ config.read('config.ini')
 url = config['sonos']['api_url']
 zone = config['sonos']['zone']
 queuemode = config['sonos']['queuemode']
+queueclear = config['sonos'].getboolean('queueclear')
 coinslot_gpio_pin = config['general'].getint('coinslot_gpio_pin')
 cabinet_lights_colour = config['general']['cabinet_lights_colour'].split(",")
 
@@ -72,7 +73,7 @@ def main():
         keypad_queue = asyncio.Queue()
         keypad = Keypad(keypad_queue)
         database.set_credits(0)
-        sonos = SonosInterface(url,zone,queuemode)
+        sonos = SonosInterface(url,zone,queuemode,queueclear)
         coinslot_handler(credits)
 
         loop = asyncio.get_event_loop()
