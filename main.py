@@ -55,7 +55,7 @@ def coinslot_handler(c):
             callback=coinslot_callback, bouncetime=200)
 
 def coinslot_callback(channel):
-    logging.info(f"Coin inserted - Incrementing credits to {database.get_credits()}")
+    logging.info(f"Coin inserted - Incrementing credits to {database.get_credits()+1}")
     database.increment_credits()
 
 def init_cabinet_lights(r,g,b):
