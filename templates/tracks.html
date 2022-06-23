@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block navbar %}
+<li class="nav-item">
+    <a class="nav-link" href="#">General</a>
+</li>
+<li class="nav-item active">
+    <a class="nav-link" href="#">Tracks</a>
+</li>
+{% endblock %}
+
+{% block content %}
+    <h1>{% block title %} DimePi - Track Configuration {% endblock %}</h1>
+    <p>Track is {{ artist_name }} - {{ track_name }}</p>
+{% endblock %}
