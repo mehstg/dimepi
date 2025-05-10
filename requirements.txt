@@ -1,4 +1,4 @@
-Adafruit_Blinka==7.0.2
+Adafruit_Blinka==7.4.0
 adafruit_circuitpython_mcp230xx==2.4.6
 board==1.0
 requests==2.21.0
