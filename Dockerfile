@@ -1,16 +1,17 @@
-# syntax=docker/dockerfile:1
-FROM balenalib/raspberrypi3-python:3.8
+FROM balenalib/raspberrypi3-debian:bullseye
 
-RUN apt-get update && \
-    apt-get -y install python3-smbus build-essential && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-smbus \
+    build-essential && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-#CMD sleep 100
-CMD modprobe i2c-dev && python main.py
+CMD ["sh", "-c", "modprobe i2c-dev && python3 main.py"]
