@@ -15,3 +15,12 @@ services:
     ports:
       - "5005:5005"
     network_mode: "host"
+  sqlite-web:
+    image: coleifer/sqlite-web
+    ports:
+      - "8080:8080"
+    network_mode: "host"
+    environment:
+      SQLITE_DATABASE: "/var/lib/dimepi/database.db"
+    volumes:
+      - database:/var/lib/dimepi
