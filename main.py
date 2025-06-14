@@ -9,6 +9,7 @@ import logging
 import board
 import neopixel
 import configparser
+from time import monotonic as now
 
 config = configparser.ConfigParser()
 config.sections()
@@ -20,6 +21,10 @@ queuemode = config['sonos']['queuemode']
 queueclear = config['sonos'].getboolean('queueclear')
 coinslot_gpio_pin = config['general'].getint('coinslot_gpio_pin')
 cabinet_lights_colour = config['general']['cabinet_lights_colour'].split(",")
+
+last_coin_time = 0
+DEBOUNCE_TIME = 0.2  # seconds
+_gpio_initialized = False
 
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -48,15 +53,23 @@ async def jukebox_handler(queue,keypad,sonos):
         else:
             keypad.set_credit_light_off()
 
-def coinslot_handler(c):
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(coinslot_gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(coinslot_gpio_pin, GPIO.FALLING, 
-            callback=coinslot_callback, bouncetime=200)
+def coinslot_handler():
+    global _gpio_initialized
+    if not _gpio_initialized:
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(coinslot_gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(coinslot_gpio_pin, GPIO.FALLING, callback=coinslot_callback, bouncetime=50)
+        _gpio_initialized = True
 
 def coinslot_callback(channel):
-    logging.info(f"Coin inserted - Incrementing credits to {database.get_credits()+1}")
-    database.increment_credits()
+    global last_coin_time
+    current_time = time.time()
+    if current_time - last_coin_time > DEBOUNCE_TIME:
+        last_coin_time = current_time
+        logging.info(f"Coin inserted - Incrementing credits to {database.get_credits() + 1}")
+        database.increment_credits()
+    else:
+        logging.debug("Coin detected too quickly after previous. Ignored (debounced).")
 
 def init_cabinet_lights(r,g,b):
     pixels = neopixel.NeoPixel(board.D18, 1)
