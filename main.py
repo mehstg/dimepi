@@ -1,12 +1,11 @@
 #!/usr/bin/env python 
 
+import time
+from time import monotonic as now
 import RPi.GPIO as GPIO 
 GPIO.cleanup()
 time.sleep(0.5)
 GPIO.setmode(GPIO.BCM)
-
-import time
-from time import monotonic as now
 
 from keypad import Keypad
 from sonos_interface import SonosInterface
