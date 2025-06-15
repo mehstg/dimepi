@@ -1,4 +1,4 @@
-FROM balenalib/raspberrypi3-debian:bullseye
+FROM FROM balenalib/raspberrypi3-python:3.9
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
