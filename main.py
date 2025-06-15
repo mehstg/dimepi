@@ -87,7 +87,7 @@ def main():
         keypad = Keypad(keypad_queue)
         database.set_credits(0)
         sonos = SonosInterface(url,zone,queuemode,queueclear)
-        coinslot_handler(credits)
+        coinslot_handler()
 
         loop = asyncio.get_event_loop()
         loop.create_task(keypad.get_key_combination())
