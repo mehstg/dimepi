@@ -3,6 +3,9 @@ from keypad import Keypad
 from sonos_interface import SonosInterface
 import database
 import RPi.GPIO as GPIO 
+GPIO.cleanup()
+time.sleep(0.5)
+GPIO.setmode(GPIO.BCM)
 from functools import partial
 import asyncio
 import logging
@@ -12,9 +15,6 @@ import configparser
 from time import monotonic as now
 import time
 
-GPIO.cleanup()
-time.sleep(0.5)
-GPIO.setmode(GPIO.BCM)
 
 
 config = configparser.ConfigParser()
