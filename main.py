@@ -1,19 +1,22 @@
 #!/usr/bin/env python 
-from keypad import Keypad
-from sonos_interface import SonosInterface
-import database
+
 import RPi.GPIO as GPIO 
 GPIO.cleanup()
 time.sleep(0.5)
 GPIO.setmode(GPIO.BCM)
+
+import time
+from time import monotonic as now
+
+from keypad import Keypad
+from sonos_interface import SonosInterface
+import database
 from functools import partial
 import asyncio
 import logging
 import board
 import neopixel
 import configparser
-from time import monotonic as now
-import time
 
 
 
