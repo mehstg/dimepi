@@ -59,11 +59,11 @@ def coinslot_handler():
     if not _gpio_initialized:
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(coinslot_gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    try:
-        GPIO.add_event_detect(coinslot_gpio_pin, GPIO.FALLING, callback=coinslot_callback, bouncetime=50)
-    except RuntimeError as e:
-        logging.error(f"Failed to add edge detection: {e}")
-        _gpio_initialized = True
+        try:
+            GPIO.add_event_detect(coinslot_gpio_pin, GPIO.FALLING, callback=coinslot_callback, bouncetime=50)
+            _gpio_initialized = True  # Only set this if successful
+        except RuntimeError as e:
+            logging.error(f"Failed to add edge detection: {e}")
 
 def coinslot_callback(channel):
     global last_coin_time
@@ -86,7 +86,9 @@ def set_cabinet_lights(pixels,r,g,b):
 
 def main():
     loop = None
+    loop = asyncio.get_event_loop()
     GPIO.cleanup()
+    time.sleep(0.5)
     try:
         cabinet_lights = init_cabinet_lights(int(cabinet_lights_colour[0]),int(cabinet_lights_colour[1]),int(cabinet_lights_colour[2]))
         keypad_queue = asyncio.Queue()
@@ -95,7 +97,6 @@ def main():
         sonos = SonosInterface(url,zone,queuemode,queueclear)
         coinslot_handler()
 
-        loop = asyncio.get_event_loop()
         loop.create_task(keypad.get_key_combination())
         loop.create_task(jukebox_handler(keypad_queue,keypad,sonos))
         loop.run_forever()
