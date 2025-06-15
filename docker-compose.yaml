@@ -26,6 +26,6 @@ services:
       - "8080:8080"
     network_mode: "host"
     environment:
-      SQLITE_DATABASE: "/var/lib/dimepi/database.db"
+      SQLITE_DATABASE: "/database.db"
     volumes:
-      - database:/var/lib/dimepi
+      - database:/data
