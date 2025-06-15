@@ -31,7 +31,7 @@ coinslot_gpio_pin = config['general'].getint('coinslot_gpio_pin')
 cabinet_lights_colour = config['general']['cabinet_lights_colour'].split(",")
 
 last_coin_time = 0
-DEBOUNCE_TIME = 0.2  # seconds
+DEBOUNCE_TIME = config['general'].getint('coin_debounce_time')
 _gpio_initialized = False
 
 
