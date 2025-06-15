@@ -12,6 +12,11 @@ import configparser
 from time import monotonic as now
 import time
 
+GPIO.cleanup()
+time.sleep(0.5)
+GPIO.setmode(GPIO.BCM)
+
+
 config = configparser.ConfigParser()
 config.sections()
 config.read('config.ini')
@@ -57,7 +62,6 @@ async def jukebox_handler(queue,keypad,sonos):
 def coinslot_handler():
     global _gpio_initialized
     if not _gpio_initialized:
-        GPIO.setmode(GPIO.BCM)
         GPIO.setup(coinslot_gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         try:
             GPIO.add_event_detect(coinslot_gpio_pin, GPIO.FALLING, callback=coinslot_callback, bouncetime=50)
@@ -87,8 +91,6 @@ def set_cabinet_lights(pixels,r,g,b):
 def main():
     loop = None
     loop = asyncio.get_event_loop()
-    GPIO.cleanup()
-    time.sleep(0.5)
     try:
         cabinet_lights = init_cabinet_lights(int(cabinet_lights_colour[0]),int(cabinet_lights_colour[1]),int(cabinet_lights_colour[2]))
         keypad_queue = asyncio.Queue()
