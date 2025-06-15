@@ -2,7 +2,7 @@ Adafruit_Blinka==7.4.0
 adafruit_circuitpython_mcp230xx==2.4.6
 board==1.0
 requests==2.21.0
-RPi.GPIO==0.7.1
+rpi-lgpio==0.6
 sqlmodel==0.0.6
 rpi_ws281x==4.3.4
 adafruit-circuitpython-neopixel==6.3.2
