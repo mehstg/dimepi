@@ -1,14 +1,23 @@
 #!/usr/bin/env python 
+
+import time
+from time import monotonic as now
+import RPi.GPIO as GPIO 
+GPIO.cleanup()
+time.sleep(0.5)
+GPIO.setmode(GPIO.BCM)
+
 from keypad import Keypad
 from sonos_interface import SonosInterface
 import database
-import RPi.GPIO as GPIO 
 from functools import partial
 import asyncio
 import logging
 import board
 import neopixel
 import configparser
+
+
 
 config = configparser.ConfigParser()
 config.sections()
@@ -20,6 +29,10 @@ queuemode = config['sonos']['queuemode']
 queueclear = config['sonos'].getboolean('queueclear')
 coinslot_gpio_pin = config['general'].getint('coinslot_gpio_pin')
 cabinet_lights_colour = config['general']['cabinet_lights_colour'].split(",")
+
+last_coin_time = 0
+DEBOUNCE_TIME = config['general'].getfloat('coin_debounce_time')
+_gpio_initialized = False
 
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
@@ -48,15 +61,25 @@ async def jukebox_handler(queue,keypad,sonos):
         else:
             keypad.set_credit_light_off()
 
-def coinslot_handler(c):
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(coinslot_gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(coinslot_gpio_pin, GPIO.FALLING, 
-            callback=coinslot_callback, bouncetime=200)
+def coinslot_handler():
+    global _gpio_initialized
+    if not _gpio_initialized:
+        GPIO.setup(coinslot_gpio_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        try:
+            GPIO.add_event_detect(coinslot_gpio_pin, GPIO.FALLING, callback=coinslot_callback, bouncetime=50)
+            _gpio_initialized = True  # Only set this if successful
+        except RuntimeError as e:
+            logging.error(f"Failed to add edge detection: {e}")
 
 def coinslot_callback(channel):
-    logging.info(f"Coin inserted - Incrementing credits to {database.get_credits()+1}")
-    database.increment_credits()
+    global last_coin_time
+    current_time = time.time()
+    if current_time - last_coin_time > DEBOUNCE_TIME:
+        last_coin_time = current_time
+        logging.info(f"Coin inserted - Incrementing credits to {database.get_credits() + 1}")
+        database.increment_credits()
+    else:
+        logging.debug("Coin detected too quickly after previous. Ignored (debounced).")
 
 def init_cabinet_lights(r,g,b):
     pixels = neopixel.NeoPixel(board.D18, 1)
@@ -68,24 +91,24 @@ def set_cabinet_lights(pixels,r,g,b):
     return pixels
 
 def main():
+    loop = None
+    loop = asyncio.get_event_loop()
     try:
         cabinet_lights = init_cabinet_lights(int(cabinet_lights_colour[0]),int(cabinet_lights_colour[1]),int(cabinet_lights_colour[2]))
         keypad_queue = asyncio.Queue()
         keypad = Keypad(keypad_queue)
         database.set_credits(0)
         sonos = SonosInterface(url,zone,queuemode,queueclear)
-        coinslot_handler(credits)
+        coinslot_handler()
 
-        loop = asyncio.get_event_loop()
         loop.create_task(keypad.get_key_combination())
         loop.create_task(jukebox_handler(keypad_queue,keypad,sonos))
         loop.run_forever()
 
-        loop.run_forever()
-
     finally:
         GPIO.cleanup()
-        loop.close()
+        if loop:
+            loop.close()
 
 if __name__ == "__main__":
         main()

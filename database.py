@@ -1,14 +1,17 @@
-from asyncio.log import logger
-from typing import Optional
+import os
 import logging
 import configparser
+from typing import Optional
 from sqlmodel import Field, SQLModel, create_engine, Session
 
 config = configparser.ConfigParser()
-config.sections()
 config.read('config.ini')
 
 database_path = config['database']['db_path']
+
+# Check if database file exists
+db_exists = os.path.exists(database_path)
+
 class Tracks(SQLModel, table=True):
     key: str = Field(primary_key=True)
     track_name: Optional[str] = None
@@ -19,9 +22,14 @@ class Credits(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     credit_count: int
 
-
 engine = create_engine(f"sqlite:///{database_path}")
-SQLModel.metadata.create_all(engine)
+
+# Create tables only if database file doesn't exist yet
+if not db_exists:
+    logging.info(f"Database file {database_path} not found. Creating new database and tables.")
+    SQLModel.metadata.create_all(engine)
+else:
+    logging.info(f"Database file {database_path} found. Using existing database.")
 
 ###################################################################################
 #################### Functions for managing tracks ################################
@@ -100,7 +108,6 @@ def get_credits():
     with Session(engine) as session:
         credit = session.query(Credits).first()
         if credit:
-            #logging.debug(f'Getting credits: {credit.credit_count}')
             return credit.credit_count
         else:
             logging.error(f'Credit count unset')

@@ -6,6 +6,11 @@ services:
     build: .
     network_mode: "host"
     privileged: true
+    devices:
+      - "/dev/mem"
+      - "/dev/gpiomem"
+    environment:
+      - UDEV=1
     labels:
       io.balena.features.kernel-modules: '1'
     volumes:
@@ -21,6 +26,6 @@ services:
       - "8080:8080"
     network_mode: "host"
     environment:
-      SQLITE_DATABASE: "/var/lib/dimepi/database.db"
+      SQLITE_DATABASE: "/database.db"
     volumes:
-      - database:/var/lib/dimepi
+      - database:/data
