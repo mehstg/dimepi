@@ -2,6 +2,7 @@
 
 import time
 from time import monotonic as now
+import sys
 import RPi.GPIO as GPIO 
 GPIO.cleanup()
 time.sleep(0.5)
@@ -16,6 +17,18 @@ import logging
 import configparser
 from datetime import datetime
 import cabinet_lights
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+if logger.hasHandlers():
+    logger.handlers.clear()
+
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 config = configparser.ConfigParser()
 config.sections()
@@ -33,12 +46,6 @@ lights_off_time = datetime.strptime(config['general']['cabinet_lights_off_time']
 last_coin_time = 0
 DEBOUNCE_TIME = config['general'].getfloat('coin_debounce_time')
 _gpio_initialized = False
-
-
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
-    level=logging.DEBUG,
-    datefmt='%Y-%m-%d %H:%M:%S')
-
 
 async def jukebox_handler(queue,keypad,sonos):
     while True:
