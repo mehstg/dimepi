@@ -119,8 +119,8 @@ def increment_credits():
         if credit:
             logging.debug(f'Incrementing credits by 1')
             credit.credit_count += 1
-            logging.info(f'Credit count {get_credits()}')
             session.commit()
+            logging.info(f'Credit count {get_credits()}')
         else:
             logging.error(f'Credit count unset')
             return None
@@ -131,8 +131,8 @@ def decrement_credits():
         if credit:
             logging.debug(f'Decrementing credits by 1')
             credit.credit_count -= 1
-            logging.info(f'Credit count {get_credits()}')
             session.commit()
+            logging.info(f'Credit count {get_credits()}')
         else:
             logging.error(f'Credit count unset')
             return None
