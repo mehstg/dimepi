@@ -2,6 +2,7 @@
 
 import time
 from time import monotonic as now
+import sys
 import RPi.GPIO as GPIO 
 GPIO.cleanup()
 time.sleep(0.5)
