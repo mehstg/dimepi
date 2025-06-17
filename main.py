@@ -13,11 +13,9 @@ import database
 from functools import partial
 import asyncio
 import logging
-import board
-import neopixel
 import configparser
 from datetime import datetime
-
+import cabinet_lights
 
 config = configparser.ConfigParser()
 config.sections()
@@ -41,37 +39,6 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
     level=logging.DEBUG,
     datefmt='%Y-%m-%d %H:%M:%S')
 
-
-def turn_off_cabinet_lights(pixels):
-    pixels[0] = (0, 0, 0)
-
-def turn_on_cabinet_lights(pixels, r, g, b):
-    pixels[0] = (r, g, b)
-
-def init_cabinet_lights(r,g,b):
-    pixels = neopixel.NeoPixel(board.D18, 1)
-    pixels[0] = (r,g,b)
-    return pixels
-
-def set_cabinet_lights(pixels,r,g,b):
-    pixels[0] = (r,g,b)
-    return pixels
-
-async def cabinet_lights_scheduler(pixels, r, g, b, on_time, off_time):
-    lights_on = True
-    while True:
-        now = datetime.now().time()
-        if now >= off_time or now < on_time:
-            if lights_on:
-                logging.info("Turning OFF cabinet lights (night mode).")
-                turn_off_cabinet_lights(pixels)
-                lights_on = False
-        else:
-            if not lights_on:
-                logging.info("Turning ON cabinet lights (day mode).")
-                turn_on_cabinet_lights(pixels, r, g, b)
-                lights_on = True
-        await asyncio.sleep(60)
 
 async def jukebox_handler(queue,keypad,sonos):
     while True:
@@ -120,7 +87,7 @@ def main():
     loop = asyncio.get_event_loop()
     try:
         r, g, b = int(cabinet_lights_colour[0]), int(cabinet_lights_colour[1]), int(cabinet_lights_colour[2])
-        cabinet_lights = init_cabinet_lights(r, g, b)
+        cabinet_lights_pixels = cabinet_lights.initialize(r, g, b)
         keypad_queue = asyncio.Queue()
         keypad = Keypad(keypad_queue)
         database.set_credits(0)
@@ -129,8 +96,7 @@ def main():
 
         loop.create_task(keypad.get_key_combination())
         loop.create_task(jukebox_handler(keypad_queue, keypad, sonos))
-        loop.create_task(cabinet_lights_scheduler(cabinet_lights, r, g, b, lights_on_time, lights_off_time))
-
+        loop.create_task(cabinet_lights.scheduler(cabinet_lights_pixels, r, g, b, lights_on_time, lights_off_time))
 
         loop.run_forever()
     finally:
