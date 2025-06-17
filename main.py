@@ -61,7 +61,7 @@ async def jukebox_handler(queue,keypad,sonos):
             logging.info(f"Matched to song in database. Playing song {database.get_track_name(output)} by {database.get_artist_name(output)}")
             result = sonos.set_track(database.get_track_id(output))
             if result:
-                logging.info(f"Track successfully queued. Decrementing credits to {database.get_credits()}")
+                logging.info(f"Track successfully queued.")
                 database.decrement_credits()
             else:
                 logging.error("Track does not exist. No credits decremented")
@@ -83,7 +83,7 @@ def coinslot_callback(channel):
     current_time = time.time()
     if current_time - last_coin_time > DEBOUNCE_TIME:
         last_coin_time = current_time
-        logging.info(f"Coin inserted - Incrementing credits to {database.get_credits() + 1}")
+        logging.info(f"Coin inserted")
         database.increment_credits()
     else:
         logging.debug("Coin detected too quickly after previous. Ignored (debounced).")
