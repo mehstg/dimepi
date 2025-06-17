@@ -13,11 +13,9 @@ import database
 from functools import partial
 import asyncio
 import logging
-import board
-import neopixel
 import configparser
-
-
+from datetime import datetime
+import cabinet_lights
 
 config = configparser.ConfigParser()
 config.sections()
@@ -29,6 +27,8 @@ queuemode = config['sonos']['queuemode']
 queueclear = config['sonos'].getboolean('queueclear')
 coinslot_gpio_pin = config['general'].getint('coinslot_gpio_pin')
 cabinet_lights_colour = config['general']['cabinet_lights_colour'].split(",")
+lights_on_time = datetime.strptime(config['general']['cabinet_lights_on_time'], '%H:%M').time()
+lights_off_time = datetime.strptime(config['general']['cabinet_lights_off_time'], '%H:%M').time()
 
 last_coin_time = 0
 DEBOUNCE_TIME = config['general'].getfloat('coin_debounce_time')
@@ -81,34 +81,31 @@ def coinslot_callback(channel):
     else:
         logging.debug("Coin detected too quickly after previous. Ignored (debounced).")
 
-def init_cabinet_lights(r,g,b):
-    pixels = neopixel.NeoPixel(board.D18, 1)
-    pixels[0] = (r,g,b)
-    return pixels
-
-def set_cabinet_lights(pixels,r,g,b):
-    pixels[0] = (r,g,b)
-    return pixels
 
 def main():
     loop = None
     loop = asyncio.get_event_loop()
     try:
-        cabinet_lights = init_cabinet_lights(int(cabinet_lights_colour[0]),int(cabinet_lights_colour[1]),int(cabinet_lights_colour[2]))
+        r, g, b = int(cabinet_lights_colour[0]), int(cabinet_lights_colour[1]), int(cabinet_lights_colour[2])
+        cabinet_lights_pixels = cabinet_lights.initialize(r, g, b)
         keypad_queue = asyncio.Queue()
         keypad = Keypad(keypad_queue)
         database.set_credits(0)
-        sonos = SonosInterface(url,zone,queuemode,queueclear)
+        sonos = SonosInterface(url, zone, queuemode, queueclear)
         coinslot_handler()
 
         loop.create_task(keypad.get_key_combination())
-        loop.create_task(jukebox_handler(keypad_queue,keypad,sonos))
-        loop.run_forever()
+        loop.create_task(jukebox_handler(keypad_queue, keypad, sonos))
+        loop.create_task(cabinet_lights.scheduler(cabinet_lights_pixels, r, g, b, lights_on_time, lights_off_time))
 
+        loop.run_forever()
     finally:
+        logging.info("Shutting down...")
+        for task in tasks:
+            task.cancel()
+        loop.run_until_complete(asyncio.gather(*tasks, return_exceptions=True))
         GPIO.cleanup()
         if loop:
             loop.close()
-
 if __name__ == "__main__":
         main()
