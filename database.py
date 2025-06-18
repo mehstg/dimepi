@@ -44,7 +44,7 @@ def set_track(key: str, track_name: str, artist_name: str, spotify_id: str):
             track.artist_name = artist_name
             track.spotify_id = spotify_id
         else:
-            logging.debug(f'Creating new track in database for {key}')
+            logging.info(f'Creating new track in database for {key}')
             track = Tracks(key=key, track_name=track_name, artist_name=artist_name, spotify_id=spotify_id)
             session.add(track)
         session.commit()
@@ -81,7 +81,7 @@ def delete_track(key: str):
     with Session(engine) as session:
         track = session.query(Tracks).filter(Tracks.key == key).first()
         if track:
-            logging.debug(f'Deleting track from database: {track.spotify_id}')
+            logging.info(f'Deleting track from database: {track.spotify_id}')
             session.delete(track)
             session.commit()
         else:
@@ -96,7 +96,7 @@ def set_credits(num: int):
     with Session(engine) as session:
         credit = session.query(Credits).first()
         if credit:
-            logging.debug(f'Setting credits to {num}')
+            logging.info(f'Setting credits to {num}')
             credit.credit_count = num
         else:
             logging.debug(f'Credit count unset. Setting to {num}')

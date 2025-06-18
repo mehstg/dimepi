@@ -24,7 +24,7 @@ class SonosInterface:
             else:
                 return False
         else:
-            logging.debug('Invalid track')
+            logging.error('Invalid track')
             return False
 
     def is_playing(self):
