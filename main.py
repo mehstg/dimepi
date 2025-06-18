@@ -19,7 +19,7 @@ from datetime import datetime
 import cabinet_lights
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
@@ -57,11 +57,11 @@ async def jukebox_handler(queue,keypad,sonos):
             # Notify the queue that the "work item" has been processed.
             queue.task_done()
 
-            logging.info(f'Track selection detected on queue: {output}')
+            logging.debug(f'Track selection detected on queue: {output}')
             logging.info(f"Matched to song in database. Playing song {database.get_track_name(output)} by {database.get_artist_name(output)}")
             result = sonos.set_track(database.get_track_id(output))
             if result:
-                logging.info(f"Track successfully queued.")
+                logging.debug(f"Track successfully queued.")
                 database.decrement_credits()
             else:
                 logging.error("Track does not exist. No credits decremented")
