@@ -101,9 +101,11 @@ def main():
         sonos = SonosInterface(url, zone, queuemode, queueclear)
         coinslot_handler()
 
-        loop.create_task(keypad.get_key_combination())
-        loop.create_task(jukebox_handler(keypad_queue, keypad, sonos))
-        loop.create_task(cabinet_lights.scheduler(cabinet_lights_pixels, r, g, b, lights_on_time, lights_off_time))
+        tasks = [
+            loop.create_task(keypad.get_key_combination()),
+            loop.create_task(jukebox_handler(keypad_queue, keypad, sonos)),
+            loop.create_task(cabinet_lights.scheduler(cabinet_lights_pixels, r, g, b, lights_on_time, lights_off_time))
+        ]
 
         loop.run_forever()
     finally:

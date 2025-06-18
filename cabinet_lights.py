@@ -33,4 +33,5 @@ async def scheduler(pixels, r, g, b, on_time, off_time):
                 logging.info("Turning ON cabinet lights (day mode).")
                 turn_on(pixels, r, g, b)
                 lights_on = True
+        logging.debug(f"Lighting scheduler tick: now={now}, on_time={on_time}, off_time={off_time}")
         await asyncio.sleep(60)
