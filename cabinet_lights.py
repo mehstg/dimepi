@@ -11,7 +11,9 @@ def turn_on(pixels, r, g, b):
     pixels[0] = (r, g, b)
 
 def initialize(r, g, b):
+    logging.debug("[CabinetLights] Initializing NeoPixel...")
     pixels = neopixel.NeoPixel(board.D18, 1)
+    logging.debug("[CabinetLights] NeoPixel created, setting initial color.")
     pixels[0] = (r, g, b)
     return pixels
 
