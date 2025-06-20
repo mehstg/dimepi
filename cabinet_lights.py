@@ -21,6 +21,7 @@ def set_color(pixels, r, g, b):
 
 async def scheduler(pixels, r, g, b, on_time, off_time):
     lights_on = True
+    logging.debug("[Scheduler] Task started and running.")
     while True:
         now = datetime.now().time()
         if now >= off_time or now < on_time:
