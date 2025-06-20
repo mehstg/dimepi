@@ -19,7 +19,7 @@ from datetime import datetime
 import cabinet_lights
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
@@ -92,6 +92,8 @@ def coinslot_callback(channel):
 def main():
     loop = None
     loop = asyncio.get_event_loop()
+    tasks = []
+
     try:
         r, g, b = int(cabinet_lights_colour[0]), int(cabinet_lights_colour[1]), int(cabinet_lights_colour[2])
         cabinet_lights_pixels = cabinet_lights.initialize(r, g, b)
@@ -99,15 +101,21 @@ def main():
         keypad = Keypad(keypad_queue)
         database.set_credits(0)
         sonos = SonosInterface(url, zone, queuemode, queueclear)
-        coinslot_handler()
 
         tasks = [
             loop.create_task(keypad.get_key_combination()),
             loop.create_task(jukebox_handler(keypad_queue, keypad, sonos)),
-            loop.create_task(cabinet_lights.scheduler(cabinet_lights_pixels, r, g, b, lights_on_time, lights_off_time))
+            loop.create_task(cabinet_lights.scheduler(
+                cabinet_lights_pixels, r, g, b, lights_on_time, lights_off_time
+            ))
         ]
 
+        logging.debug("All async tasks scheduled.")
+        coinslot_handler()
+
+        logging.debug("Event loop starting.")
         loop.run_forever()
+
     finally:
         logging.info("Shutting down...")
         for task in tasks:
@@ -116,5 +124,7 @@ def main():
         GPIO.cleanup()
         if loop:
             loop.close()
+
+
 if __name__ == "__main__":
         main()
