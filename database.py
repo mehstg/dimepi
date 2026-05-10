@@ -22,14 +22,29 @@ class Credits(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     credit_count: int
 
+class CabinetLightsSettings(SQLModel, table=True):
+    __tablename__ = "cabinet_lights_settings"
+
+    id: Optional[int] = Field(default=1, primary_key=True)
+    current_r: int
+    current_g: int
+    current_b: int
+    saved_r: int
+    saved_g: int
+    saved_b: int
+    current_on_time: str
+    current_off_time: str
+    saved_on_time: str
+    saved_off_time: str
+
 engine = create_engine(f"sqlite:///{database_path}")
 
-# Create tables only if database file doesn't exist yet
+# Create any missing tables. Existing tables are left unchanged.
 if not db_exists:
     logging.info(f"Database file {database_path} not found. Creating new database and tables.")
-    SQLModel.metadata.create_all(engine)
 else:
     logging.info(f"Database file {database_path} found. Using existing database.")
+SQLModel.metadata.create_all(engine)
 
 ###################################################################################
 #################### Functions for managing tracks ################################
@@ -136,3 +151,41 @@ def decrement_credits():
         else:
             logging.error(f'Credit count unset')
             return None
+
+###################################################################################
+#################### Functions for cabinet light settings ##########################
+###################################################################################
+
+def ensure_cabinet_lights_settings(r: int, g: int, b: int, on_time: str, off_time: str):
+    with Session(engine) as session:
+        settings = session.query(CabinetLightsSettings).filter(CabinetLightsSettings.id == 1).first()
+        if not settings:
+            settings = CabinetLightsSettings(
+                id=1,
+                current_r=r,
+                current_g=g,
+                current_b=b,
+                saved_r=r,
+                saved_g=g,
+                saved_b=b,
+                current_on_time=on_time,
+                current_off_time=off_time,
+                saved_on_time=on_time,
+                saved_off_time=off_time,
+            )
+            session.add(settings)
+            session.commit()
+
+def get_cabinet_lights_settings():
+    with Session(engine) as session:
+        settings = session.query(CabinetLightsSettings).filter(CabinetLightsSettings.id == 1).first()
+        if not settings:
+            logging.error("Cabinet light settings unset")
+            return None
+        return {
+            "r": settings.current_r,
+            "g": settings.current_g,
+            "b": settings.current_b,
+            "on_time": settings.current_on_time,
+            "off_time": settings.current_off_time,
+        }
