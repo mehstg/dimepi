@@ -4,6 +4,9 @@
 __pycache__
 *.pyc
 
+api
+frontend
+
 .DS_Store
 .env
 .venv
