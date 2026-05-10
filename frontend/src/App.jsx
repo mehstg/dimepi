@@ -36,6 +36,10 @@ function hexToRgb(hex) {
   };
 }
 
+function sortTracks(tracks) {
+  return [...tracks].sort((a, b) => a.key.localeCompare(b.key, undefined, { numeric: true, sensitivity: "base" }));
+}
+
 function App() {
   const [tracks, setTracks] = useState([]);
   const [selectedKey, setSelectedKey] = useState(null);
@@ -72,7 +76,7 @@ function App() {
       const response = await fetch(`${API_BASE}/tracks`);
       if (!response.ok) throw new Error("Could not load tracks");
       const data = await response.json();
-      setTracks(data);
+      setTracks(sortTracks(data));
       if (selectedKey && !data.some((track) => track.key === selectedKey)) {
         resetForm();
       }
@@ -181,9 +185,9 @@ function App() {
       setTracks((current) => {
         const exists = current.some((track) => track.key === saved.key);
         if (exists) {
-          return current.map((track) => (track.key === saved.key ? saved : track));
+          return sortTracks(current.map((track) => (track.key === saved.key ? saved : track)));
         }
-        return [...current, saved].sort((a, b) => a.key.localeCompare(b.key, undefined, { numeric: true }));
+        return sortTracks([...current, saved]);
       });
       setSelectedKey(saved.key);
       setForm(saved);

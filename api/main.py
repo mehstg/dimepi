@@ -263,9 +263,7 @@ def list_tracks():
             """
             SELECT key, track_name, artist_name, spotify_id
             FROM tracks
-            ORDER BY
-                CASE WHEN key GLOB '[0-9]*' THEN CAST(key AS INTEGER) ELSE NULL END,
-                key
+            ORDER BY key
             """
         ).fetchall()
         return [dict(row) for row in rows]
