@@ -15,6 +15,20 @@ services:
       io.balena.features.kernel-modules: '1'
     volumes:
       - database:/var/lib/dimepi
+  dimepi-api:
+    build: ./api
+    ports:
+      - "8000:8000"
+    environment:
+      - DIMEPI_DATABASE_PATH=/var/lib/dimepi/database.db
+    volumes:
+      - database:/var/lib/dimepi
+  dimepi-frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - dimepi-api
   sonos-api:
     image: chrisns/docker-node-sonos-http-api
     ports:
