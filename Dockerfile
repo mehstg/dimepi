@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Install dependencies
 RUN apt-get update && \
-    apt-get -y install python3-smbus build-essential && \
+    apt-get -y install --no-install-recommends python3-smbus build-essential && \
     rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -13,7 +13,7 @@ WORKDIR /usr/src/app
 
 # Copy requirements and install
 COPY requirements.txt ./
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
 COPY . .

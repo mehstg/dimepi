@@ -1,0 +1,2 @@
+fastapi-slim==0.111.0
+uvicorn==0.30.1
