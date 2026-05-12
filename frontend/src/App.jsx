@@ -22,6 +22,7 @@ const defaultLightSettings = {
   saved_off_time: "22:00",
   has_unsaved_changes: false,
 };
+const CREDITS_REFRESH_MS = 2000;
 
 function rgbToHex({ r, g, b }) {
   return `#${[r, g, b].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
@@ -51,6 +52,8 @@ function App() {
   const [lights, setLights] = useState(defaultLightSettings);
   const [lightsBusy, setLightsBusy] = useState(false);
   const [lightsError, setLightsError] = useState("");
+  const [credits, setCredits] = useState(null);
+  const [creditsBusy, setCreditsBusy] = useState(false);
   const lightsPreviewRequest = useRef(0);
 
   const selectedTrack = useMemo(
@@ -98,9 +101,40 @@ function App() {
     }
   }
 
+  async function loadCredits() {
+    try {
+      const response = await fetch(`${API_BASE}/credits`);
+      if (!response.ok) throw new Error("Could not load credits");
+      const data = await response.json();
+      setCredits(data.credit_count);
+    } catch (err) {
+      setCredits(null);
+    }
+  }
+
+  async function changeCredits(direction) {
+    setCreditsBusy(true);
+    try {
+      const response = await fetch(`${API_BASE}/credits/${direction}`, { method: "POST" });
+      if (!response.ok) throw new Error("Could not update credits");
+      const data = await response.json();
+      setCredits(data.credit_count);
+    } catch (err) {
+      setCredits(null);
+    } finally {
+      setCreditsBusy(false);
+    }
+  }
+
   useEffect(() => {
     loadTracks();
     loadCabinetLights();
+    loadCredits();
+  }, []);
+
+  useEffect(() => {
+    const interval = window.setInterval(loadCredits, CREDITS_REFRESH_MS);
+    return () => window.clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -289,9 +323,29 @@ function App() {
               <h1>DimePi Tracks</h1>
               <p>{tracks.length} saved selections</p>
             </div>
-            <button type="button" className="secondary compact" onClick={loadTracks} disabled={loading}>
-              Refresh
-            </button>
+            <div className="credits-box" aria-label="Machine credits">
+              <span>Credits: {credits === null ? "..." : credits}</span>
+              <div className="credits-actions">
+                <button
+                  type="button"
+                  className="credit-button"
+                  onClick={() => changeCredits("decrement")}
+                  disabled={creditsBusy || credits === 0}
+                  aria-label="Decrement credits"
+                >
+                  -
+                </button>
+                <button
+                  type="button"
+                  className="credit-button"
+                  onClick={() => changeCredits("increment")}
+                  disabled={creditsBusy}
+                  aria-label="Increment credits"
+                >
+                  +
+                </button>
+              </div>
+            </div>
           </div>
 
           <label className="search">
