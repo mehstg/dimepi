@@ -90,7 +90,7 @@ The existing keypad lamps are driven through the original keypad electronics, wh
 
 Implementation reference:
 
-- [keypad.py](/Users/paul/workspace/dimepi/keypad.py:1)
+- [keypad.py](keypad.py)
 
 ## Coin Slot Input
 
@@ -111,8 +111,8 @@ The software currently:
 
 Implementation reference:
 
-- [main.py](/Users/paul/workspace/dimepi/main.py:34)
-- [config.ini](/Users/paul/workspace/dimepi/config.ini:1)
+- [main.py](main.py)
+- [config.ini](config.ini)
 
 ## Cabinet Lighting
 
@@ -126,7 +126,7 @@ Current behavior:
 
 Implementation reference:
 
-- [cabinet_lights.py](/Users/paul/workspace/dimepi/cabinet_lights.py:1)
+- [cabinet_lights.py](cabinet_lights.py)
 
 ## Software Layout
 
@@ -165,7 +165,7 @@ Open:
 
 ## Configuration
 
-Runtime configuration lives in [config.ini](/Users/paul/workspace/dimepi/config.ini:1).
+Runtime configuration lives in [config.ini](config.ini).
 
 Important settings:
 

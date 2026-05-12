@@ -50,25 +50,34 @@ async def jukebox_handler(queue,keypad,sonos):
         if database.get_credits() >= 1:
             if keypad.get_credit_light() is not False:
                 keypad.set_credit_light_on()
-            # Get a "work item" out of the queue.
-            output = await queue.get()
-
-            # Notify the queue that the "work item" has been processed.
-            queue.task_done()
-
-            logging.debug(f'Track selection detected on queue: {output}')
-            track = database.get_track(output)
-            if not track:
-                logging.error(f"No track configured for key {output}. No credits decremented")
+            try:
+                # Re-check credits periodically while waiting so admin UI changes
+                # are reflected without requiring a keypad press.
+                output = await asyncio.wait_for(queue.get(), timeout=IDLE_POLL_INTERVAL)
+            except asyncio.TimeoutError:
                 continue
 
-            logging.info(f"Matched to song in database. Playing song {track['track_name']} by {track['artist_name']}")
-            result = await sonos.set_track(track["spotify_id"])
-            if result:
-                logging.debug(f"Track successfully queued.")
-                database.decrement_credits()
-            else:
-                logging.error("Track does not exist. No credits decremented")
+            try:
+                if database.get_credits() < 1:
+                    logging.info("Track selection ignored because no credits are available")
+                    continue
+
+                logging.debug(f'Track selection detected on queue: {output}')
+                track = database.get_track(output)
+                if not track:
+                    logging.error(f"No track configured for key {output}. No credits decremented")
+                    continue
+
+                logging.info(f"Matched to song in database. Playing song {track['track_name']} by {track['artist_name']}")
+                result = await sonos.set_track(track["spotify_id"])
+                if result:
+                    logging.debug(f"Track successfully queued.")
+                    database.decrement_credits()
+                else:
+                    logging.error("Track does not exist. No credits decremented")
+            finally:
+                # Notify the queue that the "work item" has been processed.
+                queue.task_done()
         else:
             if keypad.get_credit_light() is not True:
                 keypad.set_credit_light_off()
