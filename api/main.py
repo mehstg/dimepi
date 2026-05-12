@@ -1,10 +1,15 @@
+import json
 import os
 import re
 import sqlite3
+import urllib.error
+import urllib.parse
+import urllib.request
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 
@@ -99,6 +104,8 @@ def parse_lights_time(value: str, field_name: str):
 
 
 DATABASE_PATH = os.environ.get("DIMEPI_DATABASE_PATH", "/var/lib/dimepi/database.db")
+SONOS_API_URL = os.environ.get("SONOS_API_URL", "http://dimepi:5005").rstrip("/")
+SONOS_ZONE = os.environ.get("SONOS_ZONE", "Cabin")
 DEFAULT_LIGHTS_COLOR = parse_lights_color(
     os.environ.get("DIMEPI_CABINET_LIGHTS_COLOUR", "255,90,0")
 )
@@ -203,6 +210,26 @@ def get_credit_count():
         return 0
 
 
+def sonos_request(*parts: str):
+    path = "/".join(urllib.parse.quote(part, safe="") for part in (SONOS_ZONE, *parts))
+    url = f"{SONOS_API_URL}/{path}"
+    try:
+        with urllib.request.urlopen(url, timeout=5) as response:
+            body = response.read()
+            content_type = response.headers.get("Content-Type", "application/json")
+            if "application/json" in content_type:
+                return JSONResponse(
+                    content=json.loads(body.decode("utf-8") or "{}"),
+                    status_code=response.status,
+                )
+            return Response(content=body, status_code=response.status, media_type=content_type)
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace") or exc.reason
+        raise HTTPException(status_code=exc.code, detail=detail) from exc
+    except urllib.error.URLError as exc:
+        raise HTTPException(status_code=502, detail=f"Could not reach Sonos API: {exc.reason}") from exc
+
+
 def update_credit_count(delta: int):
     with get_connection() as connection:
         row = connection.execute(
@@ -287,15 +314,31 @@ def get_credits():
 
 @app.get("/sonos-config", response_model=SonosConfig)
 def get_sonos_config():
-    api_url = os.environ.get("SONOS_API_URL", "http://localhost:5005")
-    zone = os.environ.get("SONOS_ZONE", "Cabin")
-    api_url = api_url.rstrip("/")
+    api_url = SONOS_API_URL
+    zone = SONOS_ZONE
     if not api_url or not zone:
         raise HTTPException(status_code=500, detail="Missing Sonos API URL or zone config")
     return {
         "api_url": api_url,
         "zone": zone,
     }
+
+
+@app.get("/sonos/queue/detailed")
+def get_sonos_queue():
+    return sonos_request("queue", "detailed")
+
+
+@app.get("/sonos/state")
+def get_sonos_state():
+    return sonos_request("state")
+
+
+@app.get("/sonos/volume/{volume}")
+def set_sonos_volume(volume: int):
+    if volume < 0 or volume > 100:
+        raise HTTPException(status_code=422, detail="Volume must be between 0 and 100")
+    return sonos_request("volume", str(volume))
 
 
 @app.post("/credits/increment", response_model=Credits)
