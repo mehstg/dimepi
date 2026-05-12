@@ -75,6 +75,7 @@ function App() {
   const [volumeLoading, setVolumeLoading] = useState(true);
   const [volumeBusy, setVolumeBusy] = useState(false);
   const [volumeError, setVolumeError] = useState("");
+  const [sonosBusy, setSonosBusy] = useState(false);
   const lightsPreviewRequest = useRef(0);
 
   const selectedTrack = useMemo(
@@ -173,6 +174,54 @@ function App() {
 
   async function refreshSonos(config = sonosConfig) {
     await Promise.all([loadSonosPlaylist(config), loadSonosVolume(config)]);
+  }
+
+  async function runSonosAction(...parts) {
+    if (!sonosConfig?.api_url || !sonosConfig?.zone) return null;
+
+    setSonosBusy(true);
+    setPlaylistError("");
+    setVolumeError("");
+    try {
+      const response = await fetch(sonosUrl(sonosConfig.api_url, sonosConfig.zone, ...parts));
+      if (!response.ok) throw new Error("Could not update Sonos playback");
+      await refreshSonos(sonosConfig);
+      return response;
+    } catch (err) {
+      setPlaylistError(err.message);
+      return null;
+    } finally {
+      setSonosBusy(false);
+    }
+  }
+
+  async function clearSonosPlaylist() {
+    await runSonosAction("clearqueue");
+  }
+
+  async function removeSonosPlaylistItem(removeIndex) {
+    if (!sonosConfig?.api_url || !sonosConfig?.zone || sonosBusy) return;
+
+    const nextQueue = playlist.filter((_, index) => index !== removeIndex);
+    setSonosBusy(true);
+    setPlaylistError("");
+    try {
+      const clearResponse = await fetch(sonosUrl(sonosConfig.api_url, sonosConfig.zone, "clearqueue"));
+      if (!clearResponse.ok) throw new Error("Could not clear Sonos playlist");
+
+      for (const item of nextQueue) {
+        if (!item.uri) continue;
+        const response = await fetch(sonosUrl(sonosConfig.api_url, sonosConfig.zone, "queue", item.uri));
+        if (!response.ok) throw new Error("Could not rebuild Sonos playlist");
+      }
+
+      await refreshSonos(sonosConfig);
+    } catch (err) {
+      setPlaylistError(err.message);
+      await loadSonosPlaylist(sonosConfig);
+    } finally {
+      setSonosBusy(false);
+    }
   }
 
   async function setSonosVolume(nextVolume) {
@@ -561,6 +610,30 @@ function App() {
               </div>
             </div>
 
+            <div className="transport-controls" aria-label="Sonos playback controls">
+              <button type="button" className="secondary compact" onClick={() => runSonosAction("previous")} disabled={sonosBusy || !sonosConfig}>
+                Previous
+              </button>
+              <button type="button" className="secondary compact" onClick={() => runSonosAction("timeseek", "0")} disabled={sonosBusy || !sonosConfig}>
+                Restart
+              </button>
+              <button type="button" className="secondary compact" onClick={() => runSonosAction("play")} disabled={sonosBusy || !sonosConfig}>
+                Play
+              </button>
+              <button type="button" className="secondary compact" onClick={() => runSonosAction("pause")} disabled={sonosBusy || !sonosConfig}>
+                Pause
+              </button>
+              <button type="button" className="secondary compact" onClick={() => runSonosAction("pause")} disabled={sonosBusy || !sonosConfig}>
+                Stop
+              </button>
+              <button type="button" className="secondary compact" onClick={() => runSonosAction("next")} disabled={sonosBusy || !sonosConfig}>
+                Next
+              </button>
+              <button type="button" className="danger compact" onClick={clearSonosPlaylist} disabled={sonosBusy || !sonosConfig || playlist.length === 0}>
+                Clear
+              </button>
+            </div>
+
             {playlistLoading ? <div className="empty-state inline-empty">Loading playlist...</div> : null}
             {!playlistLoading && !playlistError && playlist.length === 0 ? (
               <div className="empty-state inline-empty">The Sonos playlist is empty.</div>
@@ -575,6 +648,9 @@ function App() {
                       <strong>{item.title || "Untitled track"}</strong>
                       <small>{[item.artist, item.album].filter(Boolean).join(" - ") || "Unknown artist"}</small>
                     </span>
+                    <button type="button" className="danger compact" onClick={() => removeSonosPlaylistItem(index)} disabled={sonosBusy || !item.uri}>
+                      Delete
+                    </button>
                   </li>
                 ))}
               </ol>
