@@ -13,6 +13,10 @@ The project combines:
 
 ## Photos
 
+### Demo Video
+
+[![Dimepi Sound Leisure Dimebox Sonos jukebox demo](https://img.youtube.com/vi/6cHQMFh-Xqc/hqdefault.jpg)](https://www.youtube.com/watch?v=6cHQMFh-Xqc)
+
 ### Completed Dimebox
 
 ![Completed Sound Leisure Dimebox conversion](images/505855625_10162739360407128_8926652774884317206_n.jpg)

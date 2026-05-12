@@ -54,6 +54,10 @@ class CabinetLightsSettings(BaseModel):
     has_unsaved_changes: bool
 
 
+class Credits(BaseModel):
+    credit_count: int
+
+
 app = FastAPI(title="DimePi Admin API")
 
 app.add_middleware(
@@ -146,6 +150,62 @@ def init_database():
         )
 
 
+def get_credit_count():
+    with get_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT credit_count
+            FROM credits
+            ORDER BY id
+            LIMIT 1
+            """
+        ).fetchone()
+        if row is not None:
+            return row["credit_count"]
+
+        connection.execute(
+            """
+            INSERT INTO credits (credit_count)
+            VALUES (0)
+            """
+        )
+        return 0
+
+
+def update_credit_count(delta: int):
+    with get_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT id, credit_count
+            FROM credits
+            ORDER BY id
+            LIMIT 1
+            """
+        ).fetchone()
+
+        if row is None:
+            credit_count = max(0, delta)
+            connection.execute(
+                """
+                INSERT INTO credits (credit_count)
+                VALUES (?)
+                """,
+                (credit_count,),
+            )
+            return credit_count
+
+        credit_count = max(0, row["credit_count"] + delta)
+        connection.execute(
+            """
+            UPDATE credits
+            SET credit_count = ?
+            WHERE id = ?
+            """,
+            (credit_count, row["id"]),
+        )
+        return credit_count
+
+
 def validate_time(value: Optional[str], field_name: str):
     if value is not None and not TIME_PATTERN.match(value):
         raise HTTPException(status_code=422, detail=f"{field_name} must use HH:MM in 24-hour time")
@@ -187,6 +247,21 @@ def startup():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/credits", response_model=Credits)
+def get_credits():
+    return {"credit_count": get_credit_count()}
+
+
+@app.post("/credits/increment", response_model=Credits)
+def increment_credits():
+    return {"credit_count": update_credit_count(1)}
+
+
+@app.post("/credits/decrement", response_model=Credits)
+def decrement_credits():
+    return {"credit_count": update_credit_count(-1)}
 
 
 @app.get("/cabinet-lights", response_model=CabinetLightsSettings)

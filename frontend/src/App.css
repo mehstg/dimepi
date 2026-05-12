@@ -67,6 +67,45 @@ button:disabled {
   border-bottom: 1px solid #ebe6dc;
 }
 
+.credits-box {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 176px;
+  border: 1px solid #c9ded8;
+  border-radius: 6px;
+  padding: 6px;
+  color: #26383a;
+  background: #e9f2ef;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.credits-box span {
+  padding-left: 4px;
+  white-space: nowrap;
+}
+
+.credits-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.credit-button {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #b8d1ca;
+  padding: 0;
+  color: #26383a;
+  background: #ffffff;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+}
+
 h1,
 h2,
 h3,
