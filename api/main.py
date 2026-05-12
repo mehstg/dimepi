@@ -1,6 +1,7 @@
 import os
 import re
 import sqlite3
+import configparser
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Response, status
@@ -8,10 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 
-DATABASE_PATH = os.environ.get("DIMEPI_DATABASE_PATH", "/var/lib/dimepi/database.db")
-DEFAULT_LIGHTS_COLOR = (255, 90, 0)
-DEFAULT_LIGHTS_ON_TIME = "07:00"
-DEFAULT_LIGHTS_OFF_TIME = "22:00"
 TIME_PATTERN = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
@@ -58,6 +55,11 @@ class Credits(BaseModel):
     credit_count: int
 
 
+class SonosConfig(BaseModel):
+    api_url: str
+    zone: str
+
+
 app = FastAPI(title="DimePi Admin API")
 
 app.add_middleware(
@@ -79,6 +81,44 @@ def get_connection():
 
 def normalize_key(key: str):
     return key.strip().upper()
+
+
+def get_config():
+    config = configparser.ConfigParser()
+    config_paths = [
+        os.environ.get("DIMEPI_CONFIG_PATH"),
+        "config.ini",
+        "../config.ini",
+        "/usr/src/app/config.ini",
+        "/app/config.ini",
+    ]
+    read_files = config.read([path for path in config_paths if path])
+    if not read_files:
+        raise HTTPException(status_code=500, detail="Could not read config.ini")
+    return config
+
+
+def parse_lights_color(value: str):
+    try:
+        rgb = tuple(int(part.strip()) for part in value.split(","))
+    except ValueError as exc:
+        raise RuntimeError("general.cabinet_lights_colour must be R,G,B") from exc
+    if len(rgb) != 3 or any(component < 0 or component > 255 for component in rgb):
+        raise RuntimeError("general.cabinet_lights_colour must contain three values from 0 to 255")
+    return rgb
+
+
+def parse_lights_time(value: str, field_name: str):
+    if not TIME_PATTERN.match(value):
+        raise RuntimeError(f"general.{field_name} must use HH:MM in 24-hour time")
+    return value
+
+
+CONFIG = get_config()
+DATABASE_PATH = os.environ.get("DIMEPI_DATABASE_PATH", CONFIG.get("database", "db_path", fallback="/var/lib/dimepi/database.db"))
+DEFAULT_LIGHTS_COLOR = parse_lights_color(CONFIG.get("general", "cabinet_lights_colour", fallback="255,90,0"))
+DEFAULT_LIGHTS_ON_TIME = parse_lights_time(CONFIG.get("general", "cabinet_lights_on_time", fallback="07:00"), "cabinet_lights_on_time")
+DEFAULT_LIGHTS_OFF_TIME = parse_lights_time(CONFIG.get("general", "cabinet_lights_off_time", fallback="22:00"), "cabinet_lights_off_time")
 
 
 def init_database():
@@ -252,6 +292,21 @@ def health():
 @app.get("/credits", response_model=Credits)
 def get_credits():
     return {"credit_count": get_credit_count()}
+
+
+@app.get("/sonos-config", response_model=SonosConfig)
+def get_sonos_config():
+    config = get_config()
+    if "sonos" not in config:
+        raise HTTPException(status_code=500, detail="Missing [sonos] config")
+    api_url = config["sonos"].get("api_url", "").rstrip("/")
+    zone = config["sonos"].get("zone", "")
+    if not api_url or not zone:
+        raise HTTPException(status_code=500, detail="Missing Sonos API URL or zone config")
+    return {
+        "api_url": api_url,
+        "zone": zone,
+    }
 
 
 @app.post("/credits/increment", response_model=Credits)

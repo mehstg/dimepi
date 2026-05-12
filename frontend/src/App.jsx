@@ -23,6 +23,7 @@ const defaultLightSettings = {
   has_unsaved_changes: false,
 };
 const CREDITS_REFRESH_MS = 2000;
+const SONOS_PLAYLIST_REFRESH_MS = 5000;
 
 function rgbToHex({ r, g, b }) {
   return `#${[r, g, b].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
@@ -41,6 +42,18 @@ function sortTracks(tracks) {
   return [...tracks].sort((a, b) => a.key.localeCompare(b.key, undefined, { numeric: true, sensitivity: "base" }));
 }
 
+function normalizeQueueItems(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
+function sonosUrl(apiUrl, zone, ...parts) {
+  const base = apiUrl.replace(/\/$/, "");
+  const path = [zone, ...parts].map((part) => encodeURIComponent(part)).join("/");
+  return `${base}/${path}`;
+}
+
 function App() {
   const [tracks, setTracks] = useState([]);
   const [selectedKey, setSelectedKey] = useState(null);
@@ -54,6 +67,14 @@ function App() {
   const [lightsError, setLightsError] = useState("");
   const [credits, setCredits] = useState(null);
   const [creditsBusy, setCreditsBusy] = useState(false);
+  const [sonosConfig, setSonosConfig] = useState(null);
+  const [playlist, setPlaylist] = useState([]);
+  const [playlistLoading, setPlaylistLoading] = useState(true);
+  const [playlistError, setPlaylistError] = useState("");
+  const [volume, setVolume] = useState(null);
+  const [volumeLoading, setVolumeLoading] = useState(true);
+  const [volumeBusy, setVolumeBusy] = useState(false);
+  const [volumeError, setVolumeError] = useState("");
   const lightsPreviewRequest = useRef(0);
 
   const selectedTrack = useMemo(
@@ -112,6 +133,82 @@ function App() {
     }
   }
 
+  async function loadSonosConfig() {
+    const response = await fetch(`${API_BASE}/sonos-config`);
+    if (!response.ok) throw new Error("Could not load Sonos settings");
+    return response.json();
+  }
+
+  async function loadSonosPlaylist(config = sonosConfig) {
+    if (!config?.api_url || !config?.zone) return;
+
+    setPlaylistError("");
+    try {
+      const response = await fetch(sonosUrl(config.api_url, config.zone, "queue", "detailed"));
+      if (!response.ok) throw new Error("Could not load Sonos playlist");
+      const data = await response.json();
+      setPlaylist(normalizeQueueItems(data));
+    } catch (err) {
+      setPlaylistError(err.message);
+    } finally {
+      setPlaylistLoading(false);
+    }
+  }
+
+  async function loadSonosVolume(config = sonosConfig) {
+    if (!config?.api_url || !config?.zone) return;
+
+    setVolumeError("");
+    try {
+      const response = await fetch(sonosUrl(config.api_url, config.zone, "state"));
+      if (!response.ok) throw new Error("Could not load Sonos volume");
+      const data = await response.json();
+      setVolume(Number(data.volume));
+    } catch (err) {
+      setVolumeError(err.message);
+    } finally {
+      setVolumeLoading(false);
+    }
+  }
+
+  async function refreshSonos(config = sonosConfig) {
+    await Promise.all([loadSonosPlaylist(config), loadSonosVolume(config)]);
+  }
+
+  async function setSonosVolume(nextVolume) {
+    if (!sonosConfig?.api_url || !sonosConfig?.zone) return;
+
+    const clampedVolume = Math.max(0, Math.min(100, Number(nextVolume)));
+    setVolume(clampedVolume);
+    setVolumeBusy(true);
+    setVolumeError("");
+    try {
+      const response = await fetch(sonosUrl(sonosConfig.api_url, sonosConfig.zone, "volume", String(clampedVolume)));
+      if (!response.ok) throw new Error("Could not update Sonos volume");
+      await loadSonosVolume(sonosConfig);
+    } catch (err) {
+      setVolumeError(err.message);
+    } finally {
+      setVolumeBusy(false);
+    }
+  }
+
+  async function initialiseSonosPlaylist() {
+    setPlaylistLoading(true);
+    setVolumeLoading(true);
+    setPlaylistError("");
+    setVolumeError("");
+    try {
+      const config = await loadSonosConfig();
+      setSonosConfig(config);
+      await refreshSonos(config);
+    } catch (err) {
+      setPlaylistError(err.message);
+      setPlaylistLoading(false);
+      setVolumeLoading(false);
+    }
+  }
+
   async function changeCredits(direction) {
     setCreditsBusy(true);
     try {
@@ -130,12 +227,19 @@ function App() {
     loadTracks();
     loadCabinetLights();
     loadCredits();
+    initialiseSonosPlaylist();
   }, []);
 
   useEffect(() => {
     const interval = window.setInterval(loadCredits, CREDITS_REFRESH_MS);
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!sonosConfig) return undefined;
+    const interval = window.setInterval(() => refreshSonos(sonosConfig), SONOS_PLAYLIST_REFRESH_MS);
+    return () => window.clearInterval(interval);
+  }, [sonosConfig]);
 
   useEffect(() => {
     function revertUnsavedLights() {
@@ -416,6 +520,66 @@ function App() {
               </button>
             </div>
           </form>
+
+          <section className="sonos-panel" aria-label="Sonos playlist">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Sonos playlist</p>
+                <h3>{sonosConfig?.zone || "Loading zone..."}</h3>
+              </div>
+            </div>
+
+            {playlistError ? <div className="error inline-error">{playlistError}</div> : null}
+            {volumeError ? <div className="error inline-error">{volumeError}</div> : null}
+
+            <div className="volume-control">
+              <label>
+                <span>Volume</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={volume ?? 0}
+                  onChange={(event) => setVolume(Number(event.target.value))}
+                  onPointerUp={(event) => setSonosVolume(event.currentTarget.value)}
+                  onKeyUp={(event) => {
+                    if (["ArrowLeft", "ArrowRight", "Home", "End", "Enter"].includes(event.key)) {
+                      setSonosVolume(event.currentTarget.value);
+                    }
+                  }}
+                  disabled={volumeLoading || volumeBusy || !sonosConfig}
+                />
+              </label>
+              <div className="volume-readout">{volumeLoading || volume === null ? "..." : `${volume}%`}</div>
+              <div className="volume-buttons">
+                <button type="button" className="secondary compact" onClick={() => setSonosVolume((volume ?? 0) - 5)} disabled={volumeBusy || volumeLoading || !sonosConfig}>
+                  -
+                </button>
+                <button type="button" className="secondary compact" onClick={() => setSonosVolume((volume ?? 0) + 5)} disabled={volumeBusy || volumeLoading || !sonosConfig}>
+                  +
+                </button>
+              </div>
+            </div>
+
+            {playlistLoading ? <div className="empty-state inline-empty">Loading playlist...</div> : null}
+            {!playlistLoading && !playlistError && playlist.length === 0 ? (
+              <div className="empty-state inline-empty">The Sonos playlist is empty.</div>
+            ) : null}
+
+            {playlist.length > 0 ? (
+              <ol className="playlist-rows">
+                {playlist.map((item, index) => (
+                  <li className="playlist-row" key={`${item.uri || item.title || "track"}-${index}`}>
+                    <span className="playlist-index">{index + 1}</span>
+                    <span className="track-meta">
+                      <strong>{item.title || "Untitled track"}</strong>
+                      <small>{[item.artist, item.album].filter(Boolean).join(" - ") || "Unknown artist"}</small>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+          </section>
 
           <section className="lights-panel" aria-label="Cabinet light settings">
             <div className="section-heading">
