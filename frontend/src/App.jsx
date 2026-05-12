@@ -48,8 +48,10 @@ function normalizeQueueItems(data) {
   return [];
 }
 
-function sonosUrl(...parts) {
-  return `${API_BASE}/sonos/${parts.map((part) => encodeURIComponent(part)).join("/")}`;
+function sonosUrl(apiUrl, zone, ...parts) {
+  const base = apiUrl.replace(/\/$/, "");
+  const path = [zone, ...parts].map((part) => encodeURIComponent(part)).join("/");
+  return `${base}/${path}`;
 }
 
 function App() {
@@ -138,11 +140,11 @@ function App() {
   }
 
   async function loadSonosPlaylist(config = sonosConfig) {
-    if (!config?.zone) return;
+    if (!config?.api_url || !config?.zone) return;
 
     setPlaylistError("");
     try {
-      const response = await fetch(sonosUrl("queue", "detailed"));
+      const response = await fetch(sonosUrl(config.api_url, config.zone, "queue", "detailed"));
       if (!response.ok) throw new Error("Could not load Sonos playlist");
       const data = await response.json();
       setPlaylist(normalizeQueueItems(data));
@@ -154,11 +156,11 @@ function App() {
   }
 
   async function loadSonosVolume(config = sonosConfig) {
-    if (!config?.zone) return;
+    if (!config?.api_url || !config?.zone) return;
 
     setVolumeError("");
     try {
-      const response = await fetch(sonosUrl("state"));
+      const response = await fetch(sonosUrl(config.api_url, config.zone, "state"));
       if (!response.ok) throw new Error("Could not load Sonos volume");
       const data = await response.json();
       setVolume(Number(data.volume));
@@ -174,14 +176,14 @@ function App() {
   }
 
   async function setSonosVolume(nextVolume) {
-    if (!sonosConfig?.zone) return;
+    if (!sonosConfig?.api_url || !sonosConfig?.zone) return;
 
     const clampedVolume = Math.max(0, Math.min(100, Number(nextVolume)));
     setVolume(clampedVolume);
     setVolumeBusy(true);
     setVolumeError("");
     try {
-      const response = await fetch(sonosUrl("volume", String(clampedVolume)));
+      const response = await fetch(sonosUrl(sonosConfig.api_url, sonosConfig.zone, "volume", String(clampedVolume)));
       if (!response.ok) throw new Error("Could not update Sonos volume");
       await loadSonosVolume(sonosConfig);
     } catch (err) {

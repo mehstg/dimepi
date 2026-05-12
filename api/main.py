@@ -1,15 +1,10 @@
-import json
 import os
 import re
 import sqlite3
-import urllib.error
-import urllib.parse
-import urllib.request
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 
@@ -210,26 +205,6 @@ def get_credit_count():
         return 0
 
 
-def sonos_request(*parts: str):
-    path = "/".join(urllib.parse.quote(part, safe="") for part in (SONOS_ZONE, *parts))
-    url = f"{SONOS_API_URL}/{path}"
-    try:
-        with urllib.request.urlopen(url, timeout=5) as response:
-            body = response.read()
-            content_type = response.headers.get("Content-Type", "application/json")
-            if "application/json" in content_type:
-                return JSONResponse(
-                    content=json.loads(body.decode("utf-8") or "{}"),
-                    status_code=response.status,
-                )
-            return Response(content=body, status_code=response.status, media_type=content_type)
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace") or exc.reason
-        raise HTTPException(status_code=exc.code, detail=detail) from exc
-    except urllib.error.URLError as exc:
-        raise HTTPException(status_code=502, detail=f"Could not reach Sonos API: {exc.reason}") from exc
-
-
 def update_credit_count(delta: int):
     with get_connection() as connection:
         row = connection.execute(
@@ -322,23 +297,6 @@ def get_sonos_config():
         "api_url": api_url,
         "zone": zone,
     }
-
-
-@app.get("/sonos/queue/detailed")
-def get_sonos_queue():
-    return sonos_request("queue", "detailed")
-
-
-@app.get("/sonos/state")
-def get_sonos_state():
-    return sonos_request("state")
-
-
-@app.get("/sonos/volume/{volume}")
-def set_sonos_volume(volume: int):
-    if volume < 0 or volume > 100:
-        raise HTTPException(status_code=422, detail="Volume must be between 0 and 100")
-    return sonos_request("volume", str(volume))
 
 
 @app.post("/credits/increment", response_model=Credits)
