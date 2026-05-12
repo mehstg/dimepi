@@ -73,6 +73,10 @@ def get_connection():
     return connection
 
 
+def normalize_key(key: str):
+    return key.strip().upper()
+
+
 def init_database():
     with get_connection() as connection:
         connection.execute(
@@ -271,7 +275,7 @@ def list_tracks():
 
 @app.post("/tracks", response_model=Track, status_code=status.HTTP_201_CREATED)
 def create_track(track: TrackIn):
-    key = track.key.strip()
+    key = normalize_key(track.key)
     spotify_id = track.spotify_id.strip()
     if not key or not spotify_id:
         raise HTTPException(status_code=422, detail="Key and Spotify ID are required")
@@ -297,6 +301,7 @@ def create_track(track: TrackIn):
 
 @app.get("/tracks/{key}", response_model=Track)
 def get_track(key: str):
+    key = normalize_key(key)
     with get_connection() as connection:
         row = connection.execute(
             """
@@ -313,6 +318,7 @@ def get_track(key: str):
 
 @app.put("/tracks/{key}", response_model=Track)
 def update_track(key: str, track: TrackUpdate):
+    key = normalize_key(key)
     spotify_id = track.spotify_id.strip()
     if not spotify_id:
         raise HTTPException(status_code=422, detail="Spotify ID is required")
@@ -338,6 +344,7 @@ def update_track(key: str, track: TrackUpdate):
 
 @app.delete("/tracks/{key}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_track(key: str):
+    key = normalize_key(key)
     with get_connection() as connection:
         cursor = connection.execute("DELETE FROM tracks WHERE key = ?", (key,))
         if cursor.rowcount == 0:

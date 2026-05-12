@@ -57,8 +57,13 @@ async def jukebox_handler(queue,keypad,sonos):
             queue.task_done()
 
             logging.debug(f'Track selection detected on queue: {output}')
-            logging.info(f"Matched to song in database. Playing song {database.get_track_name(output)} by {database.get_artist_name(output)}")
-            result = await sonos.set_track(database.get_track_id(output))
+            track = database.get_track(output)
+            if not track:
+                logging.error(f"No track configured for key {output}. No credits decremented")
+                continue
+
+            logging.info(f"Matched to song in database. Playing song {track['track_name']} by {track['artist_name']}")
+            result = await sonos.set_track(track["spotify_id"])
             if result:
                 logging.debug(f"Track successfully queued.")
                 database.decrement_credits()
@@ -107,7 +112,6 @@ def main():
         cabinet_lights_pixels = cabinet_lights.initialize(r, g, b)
         keypad_queue = asyncio.Queue()
         keypad = Keypad(keypad_queue)
-        database.set_credits(0)
         sonos = SonosInterface(url, zone, queuemode, queueclear)
         coinslot_handler()
 
