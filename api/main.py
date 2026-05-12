@@ -1,7 +1,6 @@
 import os
 import re
 import sqlite3
-import configparser
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Response, status
@@ -83,21 +82,6 @@ def normalize_key(key: str):
     return key.strip().upper()
 
 
-def get_config():
-    config = configparser.ConfigParser()
-    config_paths = [
-        os.environ.get("DIMEPI_CONFIG_PATH"),
-        "config.ini",
-        "../config.ini",
-        "/usr/src/app/config.ini",
-        "/app/config.ini",
-    ]
-    read_files = config.read([path for path in config_paths if path])
-    if not read_files:
-        raise HTTPException(status_code=500, detail="Could not read config.ini")
-    return config
-
-
 def parse_lights_color(value: str):
     try:
         rgb = tuple(int(part.strip()) for part in value.split(","))
@@ -114,11 +98,18 @@ def parse_lights_time(value: str, field_name: str):
     return value
 
 
-CONFIG = get_config()
-DATABASE_PATH = os.environ.get("DIMEPI_DATABASE_PATH", CONFIG.get("database", "db_path", fallback="/var/lib/dimepi/database.db"))
-DEFAULT_LIGHTS_COLOR = parse_lights_color(CONFIG.get("general", "cabinet_lights_colour", fallback="255,90,0"))
-DEFAULT_LIGHTS_ON_TIME = parse_lights_time(CONFIG.get("general", "cabinet_lights_on_time", fallback="07:00"), "cabinet_lights_on_time")
-DEFAULT_LIGHTS_OFF_TIME = parse_lights_time(CONFIG.get("general", "cabinet_lights_off_time", fallback="22:00"), "cabinet_lights_off_time")
+DATABASE_PATH = os.environ.get("DIMEPI_DATABASE_PATH", "/var/lib/dimepi/database.db")
+DEFAULT_LIGHTS_COLOR = parse_lights_color(
+    os.environ.get("DIMEPI_CABINET_LIGHTS_COLOUR", "255,90,0")
+)
+DEFAULT_LIGHTS_ON_TIME = parse_lights_time(
+    os.environ.get("DIMEPI_CABINET_LIGHTS_ON_TIME", "07:00"),
+    "cabinet_lights_on_time",
+)
+DEFAULT_LIGHTS_OFF_TIME = parse_lights_time(
+    os.environ.get("DIMEPI_CABINET_LIGHTS_OFF_TIME", "22:00"),
+    "cabinet_lights_off_time",
+)
 
 
 def init_database():
@@ -296,11 +287,9 @@ def get_credits():
 
 @app.get("/sonos-config", response_model=SonosConfig)
 def get_sonos_config():
-    config = get_config()
-    if "sonos" not in config:
-        raise HTTPException(status_code=500, detail="Missing [sonos] config")
-    api_url = config["sonos"].get("api_url", "").rstrip("/")
-    zone = config["sonos"].get("zone", "")
+    api_url = os.environ.get("SONOS_API_URL", "http://localhost:5005")
+    zone = os.environ.get("SONOS_ZONE", "Cabin")
+    api_url = api_url.rstrip("/")
     if not api_url or not zone:
         raise HTTPException(status_code=500, detail="Missing Sonos API URL or zone config")
     return {

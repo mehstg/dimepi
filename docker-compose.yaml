@@ -21,10 +21,10 @@ services:
       - "8000:8000"
     environment:
       - DIMEPI_DATABASE_PATH=/var/lib/dimepi/database.db
-      - DIMEPI_CONFIG_PATH=/app/config.ini
+      - SONOS_API_URL=http://localhost:5005
+      - SONOS_ZONE=Cabin
     volumes:
       - database:/var/lib/dimepi
-      - ./config.ini:/app/config.ini:ro
   dimepi-frontend:
     build: ./frontend
     ports:
