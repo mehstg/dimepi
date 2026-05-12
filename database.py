@@ -3,11 +3,12 @@ import logging
 import configparser
 from typing import Optional
 from sqlmodel import Field, SQLModel, create_engine, Session
+from sqlalchemy.pool import NullPool
 
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-database_path = config['database']['db_path']
+database_path = os.environ.get("DIMEPI_DATABASE_PATH", config['database']['db_path'])
 
 # Check if database file exists
 db_exists = os.path.exists(database_path)
@@ -37,7 +38,11 @@ class CabinetLightsSettings(SQLModel, table=True):
     saved_on_time: str
     saved_off_time: str
 
-engine = create_engine(f"sqlite:///{database_path}")
+engine = create_engine(
+    f"sqlite:///{database_path}",
+    connect_args={"timeout": 5},
+    poolclass=NullPool,
+)
 
 # Create any missing tables. Existing tables are left unchanged.
 if not db_exists:
@@ -50,7 +55,11 @@ SQLModel.metadata.create_all(engine)
 #################### Functions for managing tracks ################################
 ###################################################################################
 
+def normalize_key(key: str):
+    return key.strip().upper()
+
 def set_track(key: str, track_name: str, artist_name: str, spotify_id: str):
+    key = normalize_key(key)
     with Session(engine) as session:
         track = session.query(Tracks).filter(Tracks.key == key).first()
         if track:
@@ -64,7 +73,22 @@ def set_track(key: str, track_name: str, artist_name: str, spotify_id: str):
             session.add(track)
         session.commit()
 
+def get_track(key: str):
+    key = normalize_key(key)
+    with Session(engine) as session:
+        track = session.query(Tracks).filter(Tracks.key == key).first()
+        if track:
+            return {
+                "key": track.key,
+                "track_name": track.track_name,
+                "artist_name": track.artist_name,
+                "spotify_id": track.spotify_id,
+            }
+        logging.error(f'No track found for key {key}')
+        return None
+
 def get_track_id(key: str):
+    key = normalize_key(key)
     with Session(engine) as session:
         track = session.query(Tracks).filter(Tracks.key == key).first()
         if track:
@@ -75,6 +99,7 @@ def get_track_id(key: str):
             return None
 
 def get_track_name(key: str):
+    key = normalize_key(key)
     with Session(engine) as session:
         track = session.query(Tracks).filter(Tracks.key == key).first()
         if track:
@@ -84,6 +109,7 @@ def get_track_name(key: str):
             return None
 
 def get_artist_name(key: str):
+    key = normalize_key(key)
     with Session(engine) as session:
         track = session.query(Tracks).filter(Tracks.key == key).first()
         if track:
@@ -93,6 +119,7 @@ def get_artist_name(key: str):
             return None
 
 def delete_track(key: str):
+    key = normalize_key(key)
     with Session(engine) as session:
         track = session.query(Tracks).filter(Tracks.key == key).first()
         if track:
@@ -125,8 +152,11 @@ def get_credits():
         if credit:
             return credit.credit_count
         else:
-            logging.error(f'Credit count unset')
-            return None
+            logging.info('Credit count unset. Initializing to 0')
+            credit = Credits(credit_count=0)
+            session.add(credit)
+            session.commit()
+            return credit.credit_count
 
 def increment_credits():
     with Session(engine) as session:
@@ -134,11 +164,12 @@ def increment_credits():
         if credit:
             logging.debug(f'Incrementing credits by 1')
             credit.credit_count += 1
-            session.commit()
-            logging.info(f'Credit count {get_credits()}')
         else:
-            logging.error(f'Credit count unset')
-            return None
+            logging.info('Credit count unset. Initializing to 1')
+            credit = Credits(credit_count=1)
+            session.add(credit)
+        session.commit()
+        logging.info(f'Credit count {credit.credit_count}')
 
 def decrement_credits():
     with Session(engine) as session:
