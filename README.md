@@ -35,7 +35,7 @@ Conversion hardware added:
 
 Mechanical parts included in this repo:
 
-- [pi_carrier.stl](/Users/paul/workspace/dimepi/pi_carrier.stl) provides a 3D printable carrier so the Raspberry Pi Model A can mount in the original mainboard location.
+- [pi_carrier.stl](./pi_carrier.stl) provides a 3D printable carrier so the Raspberry Pi Model A can mount in the original mainboard location.
 
 ### Raspberry Pi Mounting
 
