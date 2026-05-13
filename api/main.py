@@ -99,6 +99,8 @@ def parse_lights_time(value: str, field_name: str):
 
 
 DATABASE_PATH = os.environ.get("DIMEPI_DATABASE_PATH", "/var/lib/dimepi/database.db")
+SONOS_API_URL = os.environ.get("SONOS_API_URL", "http://dimepi:5005").rstrip("/")
+SONOS_ZONE = os.environ.get("SONOS_ZONE", "Cabin")
 DEFAULT_LIGHTS_COLOR = parse_lights_color(
     os.environ.get("DIMEPI_CABINET_LIGHTS_COLOUR", "255,90,0")
 )
@@ -287,9 +289,8 @@ def get_credits():
 
 @app.get("/sonos-config", response_model=SonosConfig)
 def get_sonos_config():
-    api_url = os.environ.get("SONOS_API_URL", "http://localhost:5005")
-    zone = os.environ.get("SONOS_ZONE", "Cabin")
-    api_url = api_url.rstrip("/")
+    api_url = SONOS_API_URL
+    zone = SONOS_ZONE
     if not api_url or not zone:
         raise HTTPException(status_code=500, detail="Missing Sonos API URL or zone config")
     return {

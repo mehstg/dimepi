@@ -243,7 +243,7 @@ input:focus {
 
 .playlist-row {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   min-height: 58px;
@@ -294,6 +294,16 @@ input:focus {
 
 .volume-buttons button {
   min-width: 42px;
+}
+
+.transport-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.transport-controls button {
+  min-width: 76px;
 }
 
 .editor {
