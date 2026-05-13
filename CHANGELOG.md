@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/mehstg/dimepi/compare/v2.1.0...v2.2.0) (2026-05-13)
+
+
+### Features
+
+* Sonos API wired to work with the web frontend ([#23](https://github.com/mehstg/dimepi/issues/23)) ([6415e70](https://github.com/mehstg/dimepi/commit/6415e70333d18d36222498c469501931f4381154))
+
 ## [2.1.0](https://github.com/mehstg/dimepi/compare/2.0.0...v2.1.0) (2026-05-13)
 
 
