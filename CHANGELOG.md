@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/mehstg/dimepi/compare/v2.2.0...v2.2.1) (2026-05-16)
+
+
+### Bug Fixes
+
+* Sonos playlist deletion error ([#27](https://github.com/mehstg/dimepi/issues/27)) ([ded8c0b](https://github.com/mehstg/dimepi/commit/ded8c0b4c193dfc5cbf2c7a3efcd29530b83f098))
+
 ## [2.2.0](https://github.com/mehstg/dimepi/compare/v2.1.0...v2.2.0) (2026-05-13)
 
 
