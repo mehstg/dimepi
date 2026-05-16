@@ -202,19 +202,11 @@ function App() {
   async function removeSonosPlaylistItem(removeIndex) {
     if (!sonosConfig?.api_url || !sonosConfig?.zone || sonosBusy) return;
 
-    const nextQueue = playlist.filter((_, index) => index !== removeIndex);
     setSonosBusy(true);
     setPlaylistError("");
     try {
-      const clearResponse = await fetch(sonosUrl(sonosConfig.api_url, sonosConfig.zone, "clearqueue"));
-      if (!clearResponse.ok) throw new Error("Could not clear Sonos playlist");
-
-      for (const item of nextQueue) {
-        if (!item.uri) continue;
-        const response = await fetch(sonosUrl(sonosConfig.api_url, sonosConfig.zone, "queue", item.uri));
-        if (!response.ok) throw new Error("Could not rebuild Sonos playlist");
-      }
-
+      const response = await fetch(`${API_BASE}/sonos/queue/${removeIndex}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Could not delete Sonos playlist item");
       await refreshSonos(sonosConfig);
     } catch (err) {
       setPlaylistError(err.message);
