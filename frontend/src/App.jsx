@@ -199,31 +199,6 @@ function App() {
     await runSonosAction("clearqueue");
   }
 
-  async function removeSonosPlaylistItem(removeIndex) {
-    if (!sonosConfig?.api_url || !sonosConfig?.zone || sonosBusy) return;
-
-    const nextQueue = playlist.filter((_, index) => index !== removeIndex);
-    setSonosBusy(true);
-    setPlaylistError("");
-    try {
-      const clearResponse = await fetch(sonosUrl(sonosConfig.api_url, sonosConfig.zone, "clearqueue"));
-      if (!clearResponse.ok) throw new Error("Could not clear Sonos playlist");
-
-      for (const item of nextQueue) {
-        if (!item.uri) continue;
-        const response = await fetch(sonosUrl(sonosConfig.api_url, sonosConfig.zone, "queue", item.uri));
-        if (!response.ok) throw new Error("Could not rebuild Sonos playlist");
-      }
-
-      await refreshSonos(sonosConfig);
-    } catch (err) {
-      setPlaylistError(err.message);
-      await loadSonosPlaylist(sonosConfig);
-    } finally {
-      setSonosBusy(false);
-    }
-  }
-
   async function setSonosVolume(nextVolume) {
     if (!sonosConfig?.api_url || !sonosConfig?.zone) return;
 
@@ -648,9 +623,6 @@ function App() {
                       <strong>{item.title || "Untitled track"}</strong>
                       <small>{[item.artist, item.album].filter(Boolean).join(" - ") || "Unknown artist"}</small>
                     </span>
-                    <button type="button" className="danger compact" onClick={() => removeSonosPlaylistItem(index)} disabled={sonosBusy || !item.uri}>
-                      Delete
-                    </button>
                   </li>
                 ))}
               </ol>
