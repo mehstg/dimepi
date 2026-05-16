@@ -1,11 +1,7 @@
-import json
 import os
 import re
 import sqlite3
 from typing import Optional
-from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
-from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -276,93 +272,6 @@ def cabinet_lights_response(row):
     }
 
 
-def sonos_json(path: str):
-    try:
-        with urlopen(f"{SONOS_API_URL}/{path.lstrip('/')}", timeout=10) as response:
-            return json_loads(response.read())
-    except HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"Sonos API returned {exc.code}") from exc
-    except URLError as exc:
-        raise HTTPException(status_code=502, detail=f"Could not reach Sonos API: {exc.reason}") from exc
-
-
-def json_loads(data: bytes):
-    return json.loads(data.decode("utf-8"))
-
-
-def matching_sonos_player(zones, room_name: str):
-    wanted = room_name.casefold()
-    for zone in zones if isinstance(zones, list) else []:
-        if not isinstance(zone, dict):
-            continue
-        if str(zone.get("roomName", "")).casefold() == wanted and (
-            zone.get("location") or zone.get("host") or zone.get("ip") or zone.get("address")
-        ):
-            return zone
-        coordinator = zone.get("coordinator")
-        members = zone.get("members")
-        players = []
-        if isinstance(coordinator, dict):
-            players.append(coordinator)
-        if isinstance(members, list):
-            players.extend(member for member in members if isinstance(member, dict))
-        if any(str(player.get("roomName", "")).casefold() == wanted for player in players):
-            return coordinator if isinstance(coordinator, dict) else players[0]
-    return None
-
-
-def player_control_url(player):
-    location = player.get("location")
-    if location:
-        parsed = urlparse(location)
-        if parsed.scheme and parsed.netloc:
-            return f"{parsed.scheme}://{parsed.netloc}/MediaRenderer/AVTransport/Control"
-
-    host = player.get("host") or player.get("ip") or player.get("address")
-    if host:
-        parsed = urlparse(str(host))
-        netloc = parsed.netloc or parsed.path
-        return f"http://{netloc}/MediaRenderer/AVTransport/Control"
-
-    raise HTTPException(status_code=502, detail="Could not determine Sonos player address")
-
-
-def remove_sonos_queue_item(index: int):
-    zones = sonos_json("/zones")
-    player = matching_sonos_player(zones, SONOS_ZONE)
-    if not player:
-        raise HTTPException(status_code=404, detail=f"Sonos zone '{SONOS_ZONE}' not found")
-
-    sonos_queue_index = index + 1
-    body = f"""<?xml version="1.0" encoding="utf-8"?>
-<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-  <s:Body>
-    <u:RemoveTrackRangeFromQueue xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
-      <InstanceID>0</InstanceID>
-      <UpdateID></UpdateID>
-      <StartingIndex>{sonos_queue_index}</StartingIndex>
-      <NumberOfTracks>1</NumberOfTracks>
-    </u:RemoveTrackRangeFromQueue>
-  </s:Body>
-</s:Envelope>""".encode("utf-8")
-    request = Request(
-        player_control_url(player),
-        data=body,
-        headers={
-            "Content-Type": "text/xml; charset=utf-8",
-            "soapaction": '"urn:schemas-upnp-org:service:AVTransport:1#RemoveTrackRangeFromQueue"',
-        },
-        method="POST",
-    )
-    try:
-        with urlopen(request, timeout=10) as response:
-            response.read()
-    except HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"Sonos queue remove returned {exc.code}") from exc
-    except URLError as exc:
-        raise HTTPException(status_code=502, detail=f"Could not update Sonos queue: {exc.reason}") from exc
-
-
 @app.on_event("startup")
 def startup():
     init_database()
@@ -388,14 +297,6 @@ def get_sonos_config():
         "api_url": api_url,
         "zone": zone,
     }
-
-
-@app.delete("/sonos/queue/{index}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_sonos_queue_item(index: int):
-    if index < 0:
-        raise HTTPException(status_code=422, detail="Queue index must be zero or greater")
-    remove_sonos_queue_item(index)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.post("/credits/increment", response_model=Credits)
