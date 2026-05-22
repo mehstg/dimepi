@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.1](https://github.com/mehstg/dimepi/compare/v2.3.0...v2.3.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* Bug in logic when spotify connect is in queue ([#30](https://github.com/mehstg/dimepi/issues/30)) ([f628dbd](https://github.com/mehstg/dimepi/commit/f628dbda54b54435ebc34026856e73a7654a0275))
+
 ## [2.3.0](https://github.com/mehstg/dimepi/compare/v2.2.0...v2.3.0) (2026-05-21)
 
 
