@@ -35,13 +35,13 @@ class SonosInterface:
             state = await self.get_state()
             is_playing = self.is_state_playing(state)
             is_queue_playback = await self.is_current_track_in_queue(state)
-            is_external_playback = is_playing and not is_queue_playback
-            should_clear_queue = self.queueclear and (not is_playing or is_external_playback)
+            is_external_source = not is_queue_playback
+            should_clear_queue = self.queueclear and (not is_playing or is_external_source)
 
             if should_clear_queue:
                 await self.clearQueue()
 
-            queue_mode = "now" if self.queueclear and is_external_playback else self.queuemode
+            queue_mode = "now" if self.queueclear and is_external_source else self.queuemode
             r = await self._get("spotify", queue_mode, "spotify:track:" + track_id)
             if not is_playing and queue_mode != "now":
                 await self.play()
